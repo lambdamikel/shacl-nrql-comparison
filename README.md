@@ -1,4 +1,4 @@
-# SHACL and Racer nRQL: What Was Conceptually New?
+# SHACL, Racer nRQL, and Property Graphs: What Was Conceptually New — and What Came First?
 
 A semantic comparison of [SHACL](https://www.w3.org/TR/shacl/) validation with
 RacerPro's **nRQL** query language, the OWL/Data Mirroring Substrate, the

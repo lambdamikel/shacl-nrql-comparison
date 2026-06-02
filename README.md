@@ -184,6 +184,113 @@ construction* — exactly Proposition 1, confirmed from the language definition.
 (The lambda hatch can still *compute* reachability imperatively; what SHACL Core
 uniquely offers is regular paths as a *declarative* primitive.)
 
+## Property graphs in the RacerPro data substrate
+
+![A property graph built and queried in RacerPro 2.0 (RacerPorter): account nodes and a deposit edge carry key-value property maps, queried by nRQL on both node and edge properties.](pgraph-example.jpeg)
+
+**What a property graph (PG) is.** A property graph is a directed graph whose
+**nodes and edges are both first-class and both carry key-value property maps**,
+with edges typed/labeled. The practical win — and why the Enterprise Knowledge
+Graph community embraced PGs — is that you can attach data to a *relationship*. In
+a graph of financial transactions you can put `amount` and `currency` *on the
+`deposit`/`withdrawal` edge itself* and query it directly. In plain RDF or
+Description Logic that is awkward: a relationship is a bare triple / binary role
+with no slots, so attaching attributes forces reification, n-ary helper nodes, or
+RDF-star.
+
+**The data substrate is a PG.** RacerPro's **data substrate** (documented in the
+User's Guide, 2005) is exactly this: `data-node` and `data-edge` create nodes and
+edges that each carry a structured, queryable label (a property map), retrieved
+with `node-label` / `edge-label` and filtered in nRQL with `(:predicate …)` over
+**node and edge** properties. Distinctively, the substrate is *loosely coupled to
+a Description Logic reasoner*: node types are OWL/DL **concepts** and edge labels
+are DL **roles** (with `inverse`, role hierarchies, …), so one hybrid nRQL query
+mixes property-graph pattern matching with DL concept/role reasoning and
+negation-as-failure.
+
+### Worked example: spotting a suspicious transaction
+
+The screenshot above is a live RacerPro 2.0 session. The schema and data set up a
+small bank as a property graph:
+
+```lisp
+(in-tbox fintech)
+(implies account financial-concept)     ; node type 'account' is a DL concept
+(implies-role withdrawal transaction)   ; edge labels are DL roles ...
+(implies-role deposit    transaction)
+(inverse withdrawal deposit)            ; ... related by an inverse axiom
+
+(in-data-box bank1)                      ; the associated data substrate
+(data-node acc1 ((:amount  1000.00) (:currency $) (:number 10039)) account)
+(data-node acc2 ((:amount 19000.00) (:currency $) (:number  2090)) account)
+(data-edge acc1 acc2 ((:amount 9900.00) (:currency $)) deposit)   ; edge has its OWN properties
+(data-node acc3 ((:number 10039) (:currency $)) account)
+```
+
+Note the `deposit` **edge** between `acc1` and `acc2` carries its own
+`:amount 9900.00` and `:currency $` — a first-class edge property map.
+
+Now the nRQL queries (`?x` ranges over ABox individuals, `?*x` over the
+corresponding substrate nodes):
+
+```lisp
+;; [116] $-accounts whose *node* balance exceeds 10000
+(retrieve (?x)
+  (and (?x account)
+       (?*x ((:currency $) (:amount (:predicate (> 10000)))))))
+;; => (((?x acc2)))
+```
+
+This combines a **DL concept** atom (`(?x account)`, using `account ⊑
+financial-concept`) with a **node-property** predicate on the substrate. Only
+`acc2` (balance 19000) qualifies.
+
+```lisp
+;; [117] flag a suspicious large transaction: a $-account with balance > 10000
+;;       connected by a withdrawal whose *edge* amount exceeds 5000
+(retrieve (?x ?y)
+  (and (?x account)
+       (?*x ((:currency $) (:amount (:predicate (> 10000)))))
+       (?x ?y withdrawal)                                  ; DL role traversal (inverse of deposit)
+       (?*y ?*x ((:currency $) (:amount (:predicate (> 5000)))))))  ; predicate on the EDGE's amount
+;; => (((?x acc2) (?y acc1)))
+```
+
+This is the hybrid heart of the example. `(?x ?y withdrawal)` traverses the
+relationship by **DL role reasoning** — `withdrawal` is the declared `inverse` of
+`deposit`, so the `acc1 → acc2` deposit edge is followed backwards — while
+`(?*y ?*x (… (:amount (:predicate (> 5000))) …))` is a **predicate on the edge's
+property map**. The `> 5000` bound is applied to the `:amount` *of the `deposit`
+edge itself* (9900) — precisely the property-graph capability, and exactly the
+AML / fraud-detection pattern of "find large transfers."
+
+```lisp
+;; [118]/[119] read a node's property map directly
+(node-label acc2)  ; => ((:amount 19000.0) (:currency $) (:number 2090))
+(node-label acc1)  ; => ((:amount  1000.0) (:currency $) (:number 10039))
+
+;; [120] property-based identity: who else has account number 10039 (and isn't acc1)?
+(retrieve (?*x) (and (?*x ((:number 10039))) (neg (same-as ?*x *acc1))))
+;; => (((?*x acc3)))   ; acc3 shares the number — a possible duplicate/alias
+```
+
+Together these show the full property-graph repertoire — typed nodes and typed
+edges with key-value properties, node- **and edge**-property predicates, graph
+traversal, and property-based identity — *plus* DL reasoning (concept subsumption,
+role inverses) and closed-world `neg`/`same-as`, all in one query language.
+
+### Was this an early property graph?
+
+Yes — and it predates the *term* "property graph" (coined 2010). But the
+attributed-graph **model** is older still: Kuper–Vardi's Logical Data Model
+(1984), the GOOD and hypernode models (1990), and Güting's GraphDB (1994) were
+already graphs-with-attributes data models. So the calibrated verdict (paper §11)
+is: RacerPro's substrate is **not** the first PG and shows **no** documented
+influence on Neo4j/Cypher/GQL — convergent evolution, not lineage. What *is*
+genuinely early, and as far as we can find without prior or contemporary peer, is
+the *combination*: a queryable **property graph fused with a tableau DL/OWL
+reasoner**.
+
 ## Authorship
 
 The original report was drafted by a generative AI system; the revised edition was

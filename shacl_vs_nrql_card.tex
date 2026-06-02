@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage[paperwidth=12in,paperheight=9.6in,margin=0.5in]{geometry}
+\usepackage[paperwidth=12in,paperheight=11.4in,margin=0.5in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{xcolor}
@@ -19,77 +19,90 @@
 \definecolor{muted}{HTML}{57606A}
 
 \lstdefinelanguage{nrql}{
-  morekeywords={retrieve,and,union,neg,project-to,Person,firstName},
+  morekeywords={retrieve,and,union,neg,project-to,same-as,Person,Parent,firstName,hasChild},
   sensitive=false, morecomment=[l]{;}, morestring=[b]"
 }
 \lstdefinelanguage{turtle}{
   morekeywords={a}, sensitive=true, morecomment=[l]{\#}, morestring=[b]"
 }
 \lstset{
-  basicstyle=\large\ttfamily\color{ink},
+  basicstyle=\normalsize\ttfamily\color{ink},
   keywordstyle=\color{kw}\bfseries,
   commentstyle=\color{com}\itshape,
   stringstyle=\color{str},
   columns=fullflexible, keepspaces=true, showstringspaces=false,
-  breaklines=false, aboveskip=4pt, belowskip=2pt
+  breaklines=false, aboveskip=3pt, belowskip=1pt
 }
+
+\newtcblisting{shaclbox}[1]{listing only, title={#1}, colbacktitle=shaclblue,
+  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=3mm,
+  fonttitle=\normalsize\bfseries\color{white},
+  listing options={language=turtle}, left=3mm, right=2mm, top=2mm, bottom=2mm}
+\newtcblisting{nrqlbox}[1]{listing only, title={#1}, colbacktitle=nrqlgreen,
+  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=3mm,
+  fonttitle=\normalsize\bfseries\color{white},
+  listing options={language=nrql}, left=3mm, right=2mm, top=2mm, bottom=2mm}
 
 \begin{document}
 \centering
 
-{\fontsize{27}{32}\selectfont\bfseries\color{ink}
+{\fontsize{26}{31}\selectfont\bfseries\color{ink}
 What did \textcolor{shaclblue}{SHACL} (2017) add that\\[3pt]
 RacerPro \textcolor{nrqlgreen}{nRQL} couldn't already do in 2005?\par}
 
-\vspace{5pt}
-{\large\color{muted} A constraint that says ``every \texttt{Person} must have a known \texttt{firstName}''\par}
-
 \vspace{12pt}
 
-\begin{tcbraster}[raster columns=2, raster column skip=8mm, raster equal height=rows,
-  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=4mm,
-  fonttitle=\large\bfseries\color{white}, left=4mm, right=4mm, top=3mm, bottom=3mm]
-
-\begin{tcolorbox}[title={SHACL Core shape \ (W3C, 2017)}, colbacktitle=shaclblue]
-\begin{lstlisting}[language=turtle]
-ex:ParentShape
+%% ---------- Example 1: required property ----------
+\begin{tcbraster}[raster columns=2, raster column skip=7mm, raster equal height=rows]
+\begin{shaclbox}{SHACL Core --- required property}
+ex:PersonShape
   a sh:NodeShape ;
   sh:targetClass ex:Person ;
   sh:property [
     sh:path ex:firstName ;
-    sh:minCount 1
-  ] .
-\end{lstlisting}
-\end{tcolorbox}
-
-\begin{tcolorbox}[title={RacerPro nRQL \ (already possible in 2005)}, colbacktitle=nrqlgreen]
-\begin{lstlisting}[language=nrql]
+    sh:minCount 1 ] .
+\end{shaclbox}
+\begin{nrqlbox}{RacerPro nRQL (2005) --- missing known value}
 (retrieve (?x)
   (and (?x Person)
-       (neg
-         (project-to (?x)
-           (?x ?y firstName)))))
-\end{lstlisting}
-\end{tcolorbox}
-
+       (neg (project-to (?x)
+              (?x ?y firstName)))))
+\end{nrqlbox}
 \end{tcbraster}
+{\color{muted} A \textbf{negated projected subquery} $=$ \texttt{NOT EXISTS} / anti-join --- nRQL had it before SPARQL\,1.1 (2013) standardized \texttt{FILTER NOT EXISTS}.\par}
 
-\vspace{8pt}
-{\large\color{ink}
-A \textbf{negated projected subquery} $\;=\;$ \texttt{NOT EXISTS} / anti-join \;---\;
-nRQL had it \emph{years} before SPARQL\,1.1 (2013) standardized \texttt{FILTER NOT EXISTS}.\par}
+\vspace{11pt}
 
-\vspace{12pt}
+%% ---------- Example 2: value type (with DL entailment) ----------
+\begin{tcbraster}[raster columns=2, raster column skip=7mm, raster equal height=rows]
+\begin{shaclbox}{SHACL Core --- every value must be a Person}
+ex:ParentShape
+  a sh:NodeShape ;
+  sh:targetClass ex:Parent ;
+  sh:property [
+    sh:path ex:hasChild ;
+    sh:class ex:Person ] .
+\end{shaclbox}
+\begin{nrqlbox}{RacerPro nRQL (2005) --- with DL reasoning}
+(retrieve (?x)
+  (and (?x Parent)
+       (?x ?y hasChild)
+       (neg (?y Person))))
+\end{nrqlbox}
+\end{tcbraster}
+{\color{muted} Violation $=$ a known child that is \emph{not} a \texttt{Person}. And \texttt{(?y Person)} uses \textbf{DL entailment} --- an \emph{inferred} Person passes, no materialization needed.\par}
+
+\vspace{14pt}
 
 \begin{tcolorbox}[colback=darkbg, colframe=darkbg, arc=3mm, left=6mm, right=6mm, top=4mm, bottom=4mm]
 \centering\color{white}
 {\Large\bfseries Coding the W3C SHACL test suite}\\[5pt]
 {\large $\sim$\textbf{73--84\%} of SHACL Core constraint tests had a \textbf{direct nRQL counterpart}.}\\[3pt]
-{\large The provably-native residual is only $\sim$\textbf{5\%} \;---\; entirely \textbf{unbounded regular property paths}}\\[1pt]
+{\large The provably-native residual is only $\sim$\textbf{5\%} --- entirely \textbf{unbounded regular property paths}}\\[1pt]
 {\large (a theorem, not a hunch: transitive closure isn't first-order definable).}
 \end{tcolorbox}
 
-\vspace{8pt}
+\vspace{9pt}
 {\large\color{nrqlgreen}\bfseries What \emph{was} genuinely new in SHACL:}
 {\large\color{ink} recursive shape-conformance semantics, native regular paths, RDF-term-level validation, a standardized report model.}\par
 

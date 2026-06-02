@@ -220,6 +220,8 @@ Queries in $\mathcal{Q}$ are evaluated within (a fragment of) relational algebra
 
 \noindent \nrql{} recovers the behaviour only by leaving $\mathcal{Q}$: (i)~declaring $r$ a transitive role in the \tbox{} (so DL entailment supplies the closure for positive atoms); (ii)~a recursive rule / fixpoint that materializes the closure into the \abox{} or substrate; or (iii)~precomputing the closure into $M(G)$. What \shacl{} adds is \emph{native} regular-path validation over the raw graph, independent of any \owl{} role declaration. This is the firmest hard gap in the whole comparison, and Proposition~\ref{prop:paths} is why.
 
+The \nrql{} grammar corroborates this independently. The EBNF for query bodies and \abox{} query atoms in the RacerPro User's Guide (\S4.1.9, pp.~150--153 \cite{racerug}) provides exactly conjunction (\texttt{and}), disjunction (\texttt{union}), \naf{} (\texttt{neg}), the projection operator (\texttt{project-to}), equality/inequality (\texttt{same-as}), the \texttt{has-known-successor} sugar, and concrete-domain/substrate \texttt{:predicate} constraints---\emph{but no transitive-closure or regular-path constructor.} Unbounded reachability is thus absent from the language by construction, not merely awkward to encode; Proposition~\ref{prop:paths} is the model-theoretic reason the grammar could not have included it within the nonrecursive fragment.
+
 \subsection{RDF terms as the primitive validation universe (conditional)}\label{sec:term}
 \shacl{} validates \rdf{} graphs directly: IRIs, blank nodes, literals, datatype IRIs, language tags, and triples are primitive. \nrql{}'s \abox{} variables range over named individuals; substrate variables range over substrate nodes. The mirror closes much of this gap for \owl{} KBs, and a hand-built substrate can close more. The residual, genuinely term-level cases---native in \shacl{}, available in \nrql{} only if mirrored---include: blank-node-vs-IRI discrimination; exact literal lexical form; language tags as such (not merely the string); \texttt{sh:uniqueLang}; and syntactic features of \rdf{} collections or reification. If those features are encoded as substrate labels, \nrql{} can query them; if not, \shacl{} sees them and \nrql{} does not. This is therefore a \emph{conditional} novelty.
 
@@ -424,10 +426,10 @@ The source points from the uploaded manuals most relevant to the comparison:
 \begin{thebibliography}{99}
 
 \bibitem{racerug}
-Racer Systems GmbH \& Co.\ KG. \emph{RacerPro User's Guide Version 2.0}. October 24, 2012.
+Racer Systems GmbH \& Co.\ KG. \emph{RacerPro User's Guide Version 2.0}. October 24, 2012. \url{https://github.com/lambdamikel/Racer/tree/master/doc}. (Page numbers in this report are the printed page numbers of this edition; syntax was verified against \S4.1.9, pp.~150--153.)
 
 \bibitem{racerrm}
-Racer Systems GmbH \& Co.\ KG. \emph{RacerPro Reference Manual Version 1.9}. October 12, 2010.
+Racer Systems GmbH \& Co.\ KG. \emph{RacerPro Reference Manual Version 1.9}. October 12, 2010. \url{https://github.com/lambdamikel/Racer/tree/master/doc}.
 
 \bibitem{adl04}
 Volker Haarslev, Ralf M\"oller, and Michael Wessel. Querying the Semantic Web with Racer~+~\nrql{}. In \emph{Proc.\ KI-2004 International Workshop on Applications of Description Logics (ADL'04)}, Ulm, Germany, September 2004.

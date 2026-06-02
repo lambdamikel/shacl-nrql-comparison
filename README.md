@@ -93,26 +93,38 @@ deployed shapes graphs.
 Each row pairs an **actual W3C test case** with a faithful nRQL *violation* query
 (one that returns the non-conforming focus nodes — nRQL's natural way to express a
 constraint is "a query whose answers are the violations"). Queries assume a fixed
-entailment regime and, where noted, a faithful substrate mirror; markers like
-`:owl-datatype-value` and `:node-kind` are schematic substrate labels. Buckets are
-**E** (direct), **C** (conditional/lossy), **N** (native to SHACL).
+entailment regime and, where noted, the substrate mirror. **All nRQL syntax below
+is verified against the RacerPro _User's Guide 2.0_ — §4.1.9 "Formal Syntax of
+nRQL" (printed pp. 150–153) and the mirror-substrate section (pp. 137–143).**
+Grammar conventions: `?x` is an _injective_ ABox variable, `$?x` non-injective,
+`?*x` a substrate variable; `(:predicate …)` and `:satisfies` are substrate
+predicate forms; `:owl-datatype-value` / `:owl-datatype-role` are real mirror
+markers (p. 141). Buckets are **E** (direct), **C** (conditional/lossy), **N**
+(native to SHACL).
 
 | W3C test case | SHACL constraint | nRQL violation query | Bucket |
 | --- | --- | --- | --- |
-| `minCount-001` | `ex:firstName` `sh:minCount 1` on class `ex:Person` | `(retrieve (?x) (and (?x Person) (neg (project-to (?x) (?x ?y firstName)))))` | **E** |
+| `minCount-001` | `ex:firstName` `sh:minCount 1` on class `ex:Person` | `(retrieve (?x) (and (?x Person) (neg (project-to (?x) (?x ?y firstName)))))` — equivalently the manual's `(neg (?x (has-known-successor firstName)))` (p. 100) | **E** |
 | `class-001` | focus node must be `sh:class ex:Person` | `(retrieve (?x) (neg (?x Person)))` — `(?x Person)` is entailment-aware: a `MalePerson ⊑ Person` conforms, an `Animal` is returned as a violation | **E** |
-| `maxCount-001` | `ex:firstName` `sh:maxCount 1` | `(retrieve (?x) (and (?x Person) (?x ?y1 firstName) (?x ?y2 firstName) (neg (same-as ?y1 ?y2))))` — needs explicit distinctness; counts *known individuals*, not RDF terms (no unique-name assumption) | **C** |
-| `datatype-002` | `ex:value` `sh:datatype xsd:string` | `(retrieve (?x) (and (?x ?y value) (neg (?y (:owl-datatype-value string)))))` — returns `"A"@en` (an `rdf:langString`) and `42` (an integer) | **E** |
-| `pattern-001` | `ex:property` `sh:pattern "Joh"` | `(retrieve (?x) (and (?x ?y property) (neg (substring-search ?y "Joh"))))` — substrate string predicate (the manual documents substring search) | **C** |
-| `nodeKind-001` | focus node `sh:nodeKind sh:IRI` | `(retrieve (?*x) (neg (?*x (:node-kind :iri))))` — expressible **only if** term kind is mirrored as substrate data | **C** |
-| `closed-001` | `sh:closed true`, only `ex:someProperty` allowed | `(retrieve (?*x ?*y) (and (?*x ?*y (:abox-relationship)) (neg (?*x ?*y (:predicate (equalp ex:someProperty))))))` — needs predicate labels in the substrate | **C** |
-| `qualifiedValueShape-001` | `ex:related` `sh:qualifiedMinCount 3` of nested shape `Q` | `(retrieve (?x) (neg (project-to (?x) (and (?x ?a related) (Q ?a) (?x ?b related) (Q ?b) (?x ?c related) (Q ?c) (neg (same-as ?a ?b)) (neg (same-as ?a ?c)) (neg (same-as ?b ?c))))))` — `Q` abbreviates the nested body; requires 3 pairwise-distinct qualified values | **E** |
-| `path-zeroOrMore-001` | `[ sh:zeroOrMorePath ex:child ]` `sh:minCount 2` | **No nonrecursive nRQL query exists** (Proposition 1). Recover only by declaring `ex:child` transitive in the TBox, or a recursive rule materializing `child*`, then querying the materialized relation | **N** |
+| `maxCount-001` | `ex:firstName` `sh:maxCount 1` | `(retrieve (?x) (and (?x Person) (?x $?y1 firstName) (?x $?y2 firstName) (neg (same-as $?y1 $?y2))))` — `same-as` + non-injective `$?` vars (pp. 85, 153); counts *known individuals*, not RDF terms (no UNA) ¹ | **C** |
+| `datatype-002` | `ex:value` `sh:datatype xsd:string` | enforced by concrete-domain typing — `(define-concrete-domain-attribute value :type string)` makes a non-string filler unassertable/queryable; or test the mirrored `:owl-datatype-value` node ² | **E** |
+| `pattern-001` | `ex:property` `sh:pattern "Joh"` | `(retrieve (?x) (and (?x ?y property) (neg (?y (:predicate (search "Joh"))))))` — `(:predicate (search …))` is **substring** search (p. 137) ³ | **C** |
+| `nodeKind-001` | focus node `sh:nodeKind sh:IRI` | **No native primitive** for RDF term kind. Expressible only by encoding term kind as a substrate label and testing it with `(:predicate (equalp …))` | **C** |
+| `closed-001` | `sh:closed true`, only `ex:someProperty` allowed | `(retrieve (?*x ?*y) (and (?*x ?*y `_‹any-edge›_`) (neg (?*x ?*y (:predicate (equalp someProperty))))))` — `:predicate (equalp …)` is real (p. 137); needs the mirror to expose predicate labels on edges | **C** |
+| `qualifiedValueShape-001` | `ex:related` `sh:qualifiedMinCount 3` of shape `Q` | `(retrieve (?x) (neg (project-to (?x) (and (?x $?a related) (substitute (Q $?a)) (?x $?b related) (substitute (Q $?b)) (?x $?c related) (substitute (Q $?c)) (neg (same-as $?a $?b)) (neg (same-as $?a $?c)) (neg (same-as $?b $?c))))))` — `Q` is a `defquery`; the 3-distinct idiom is verbatim from p. 100 | **E** |
+| `path-zeroOrMore-001` | `[ sh:zeroOrMorePath ex:child ]` `sh:minCount 2` | **No nonrecursive nRQL query exists** — the EBNF `<query-body>` (pp. 152–153) has *no* transitive-closure / regular-path operator. Recover via a transitive role, a recursive `firerule`, or precomputed substrate closure | **N** |
 
-The pattern is visible in the table: the **E**/**C** rows are routine
-NAF-over-projection idioms (with the documented caveats), and the single **N** row
-is exactly an unbounded path — the one place where no nonrecursive nRQL query can
-match SHACL, which is the analytical result the paper proves.
+¹ For the string-valued `firstName`, distinctness is over told datatype fillers, not ABox individuals; `same-as` ranges over `<abox-query-object>`s (grammar, p. 153).
+² RacerPro datatype attributes carry a declared type, so datatype conformance is enforced by the concrete domain; the exact predicate depends on the mirror encoding.
+³ **Correction to the earlier draft:** RacerPro's concrete domain offers only `string=` / `string<>` (pp. 63–64) and the substrate offers substring `search` (p. 137) — **there is no regex**. Full `sh:pattern` regexes are a genuine gap, which is why `pattern` and `nodeKind` sit at the native-leaning (pessimistic) end of the §10.3 band.
+
+**The grammar settles the one hard case.** The EBNF for `<query-body>` and
+`<abox-query-atom>` (User's Guide pp. 152–153) provides conjunction, disjunction,
+`neg`, `project-to`, `same-as`, `has-known-successor`, and concrete-domain/substrate
+`:predicate`s — but **no transitive-closure or regular-path operator**. So the
+single **N** row is not an artifact of the coding scheme: unbounded reachability is
+absent from the nRQL language *by construction* — which is exactly Proposition 1,
+now confirmed from the language definition itself.
 
 ## Authorship
 

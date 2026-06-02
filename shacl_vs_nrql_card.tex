@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage[paperwidth=12in,paperheight=11.4in,margin=0.5in]{geometry}
+\usepackage[paperwidth=12in,paperheight=11.7in,margin=0.5in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{xcolor}
@@ -11,6 +11,7 @@
 \definecolor{shaclblue}{HTML}{1F6FEB}
 \definecolor{nrqlgreen}{HTML}{1A7F37}
 \definecolor{darkbg}{HTML}{0D1117}
+\definecolor{graybg}{HTML}{ECEFF3}
 \definecolor{panelbg}{HTML}{F6F8FA}
 \definecolor{kw}{HTML}{8250DF}
 \definecolor{str}{HTML}{0A3069}
@@ -26,7 +27,7 @@
   morekeywords={a}, sensitive=true, morecomment=[l]{\#}, morestring=[b]"
 }
 \lstset{
-  basicstyle=\normalsize\ttfamily\color{ink},
+  basicstyle=\large\ttfamily\color{ink},
   keywordstyle=\color{kw}\bfseries,
   commentstyle=\color{com}\itshape,
   stringstyle=\color{str},
@@ -35,12 +36,12 @@
 }
 
 \newtcblisting{shaclbox}[1]{listing only, title={#1}, colbacktitle=shaclblue,
-  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=3mm,
-  fonttitle=\normalsize\bfseries\color{white},
+  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=3mm, equal height group=cards,
+  fonttitle=\large\bfseries\color{white},
   listing options={language=turtle}, left=3mm, right=2mm, top=2mm, bottom=2mm}
 \newtcblisting{nrqlbox}[1]{listing only, title={#1}, colbacktitle=nrqlgreen,
-  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=3mm,
-  fonttitle=\normalsize\bfseries\color{white},
+  colframe=black!12, colback=panelbg, boxrule=0.8pt, arc=3mm, equal height group=cards,
+  fonttitle=\large\bfseries\color{white},
   listing options={language=nrql}, left=3mm, right=2mm, top=2mm, bottom=2mm}
 
 \begin{document}
@@ -64,12 +65,14 @@ ex:PersonShape
 \end{shaclbox}
 \begin{nrqlbox}{RacerPro nRQL (2005) --- missing known value}
 (retrieve (?x)
-  (and (?x Person)
-       (neg (project-to (?x)
-              (?x ?y firstName)))))
+  (and
+    (?x Person)
+    (neg
+      (project-to (?x)
+        (?x ?y firstName)))))
 \end{nrqlbox}
 \end{tcbraster}
-{\color{muted} A \textbf{negated projected subquery} $=$ \texttt{NOT EXISTS} / anti-join --- nRQL had it before SPARQL\,1.1 (2013) standardized \texttt{FILTER NOT EXISTS}.\par}
+{\large\color{muted} A \textbf{negated projected subquery} $=$ \texttt{NOT EXISTS} / anti-join --- nRQL had it before SPARQL\,1.1 (2013) standardized \texttt{FILTER NOT EXISTS}.\par}
 
 \vspace{11pt}
 
@@ -85,17 +88,19 @@ ex:ParentShape
 \end{shaclbox}
 \begin{nrqlbox}{RacerPro nRQL (2005) --- with DL reasoning}
 (retrieve (?x)
-  (and (?x Parent)
-       (?x ?y hasChild)
-       (neg (?y Person))))
+  (and
+    (?x Parent)
+    (?x ?y hasChild)
+    (neg
+      (?y Person))))
 \end{nrqlbox}
 \end{tcbraster}
-{\color{muted} Violation $=$ a known child that is \emph{not} a \texttt{Person}. And \texttt{(?y Person)} uses \textbf{DL entailment} --- an \emph{inferred} Person passes, no materialization needed.\par}
+{\large\color{muted} Violation $=$ a known child that is \emph{not} a \texttt{Person}. And \texttt{(?y Person)} uses \textbf{DL entailment} --- an \emph{inferred} Person passes, no materialization needed.\par}
 
 \vspace{14pt}
 
-\begin{tcolorbox}[colback=darkbg, colframe=darkbg, arc=3mm, left=6mm, right=6mm, top=4mm, bottom=4mm]
-\centering\color{white}
+\begin{tcolorbox}[colback=graybg, colframe=black!15, boxrule=0.8pt, arc=3mm, left=6mm, right=6mm, top=4mm, bottom=4mm]
+\centering\color{ink}
 {\Large\bfseries Coding the W3C SHACL test suite}\\[5pt]
 {\large $\sim$\textbf{73--84\%} of SHACL Core constraint tests had a \textbf{direct nRQL counterpart}.}\\[3pt]
 {\large The provably-native residual is only $\sim$\textbf{5\%} --- entirely \textbf{unbounded regular property paths}}\\[1pt]

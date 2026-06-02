@@ -1,0 +1,884 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  pdfauthor={Generative AI (OpenAI GPT-5.5 Pro)},
+  pdftitle={SHACL and Racer nRQL: What Was Conceptually New?}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{SHACL and Racer nRQL}
+\rhead{\thepage}
+\setlength{\headheight}{14pt}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{0.7em}{}
+
+\lstdefinelanguage{nrql}{
+  morekeywords={retrieve,and,union,neg,NEG,not,NOT,project-to,project,pi,substitute,firerule,instance,related,constrained,constraints,in-tbox,in-abox,in-mirror-data-box,enable-data-substrate-mirroring,enable-smart-abox-mirroring,has-known-successor,same-as,NIL,TOP,BOTTOM},
+  sensitive=false,
+  morecomment=[l]{;},
+  morestring=[b]"
+}
+\lstdefinelanguage{turtle}{
+  morekeywords={a,prefix,BASE,PREFIX,true,false},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]"
+}
+\lstset{
+  basicstyle=\small\ttfamily,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.2pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+
+\newcommand{\nrql}{nRQL}
+\newcommand{\racer}{RacerPro}
+\newcommand{\shacl}{SHACL}
+\newcommand{\naf}{negation as failure}
+\newcommand{\abox}{ABox}
+\newcommand{\tbox}{TBox}
+\newcommand{\rdf}{RDF}
+\newcommand{\owl}{OWL}
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{1.2in}
+  {\LARGE \bfseries SHACL and Racer nRQL:\par}
+  \vspace{0.25in}
+  {\Large \bfseries What Was Conceptually New?\par}
+  \vspace{0.5in}
+  {\large A semantic comparison of SHACL validation with RacerPro nRQL,\par}
+  {\large the OWL/Data Mirroring Substrate, and hybrid nRQL queries\par}
+  \vspace{0.9in}
+  {\large Prepared from the uploaded RacerPro manuals and the SHACL specifications\par}
+  \vspace{0.45in}
+  {\large Author: Generative AI (OpenAI GPT-5.5 Pro)\par}
+  \vspace{0.15in}
+  {\normalsize See the Generative AI authorship and independence declaration.\par}
+  \vfill
+  {\large \today\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\begin{abstract}
+This report compares \shacl{} with what was already expressible in \racer{} through \nrql{}, the \owl{} Data Mirroring Substrate, the substrate representation layer, and hybrid queries. The main conclusion is deliberately narrow: for \owl{}-centric integrity constraints over finite, explicitly represented data, very little in \shacl{} is fundamentally new at the level of constraint expressivity. \nrql{} already provided closed-world violation queries over an open-world \owl{} knowledge base by combining DL-aware positive atoms with \naf{}, projection, aggregation, rules, concrete-domain/datatype predicates, complex \tbox{} queries, and hybrid substrate atoms. The important correction to many modern comparisons is that \nrql{} was not merely an \abox{} query language: the mirror data substrate could expose \owl{} elements, datatype values, annotation values, and other mirrored objects as queryable substrate data.
+
+In pragmatic terms, the comparison supports the claim that the large majority of ordinary, contemporary \shacl{} use cases over \owl{}-centric data---plausibly on the order of four fifths, if one counts recurring patterns rather than deployments---were already expressible with \nrql{} plus \racer{}'s substrate and mirroring machinery by 2005. This ``80 percent'' figure should not be read as a measured empirical statistic. It is a compact way of saying that required-property checks, cardinality checks, qualified-value checks, disjointness and equality checks, missing-annotation checks, ontology-metadata checks, closed-world violation queries, and many rule-assisted data-completeness checks were already technically available. The residual cases are the genuinely \rdf{}-native ones: regular property paths over raw graphs, literal language/lexical term primitives, closed-shape inspection of arbitrary predicate positions unless faithfully mirrored, and the shape-conformance/reporting semantics introduced by \shacl{} itself.
+
+The revised report also separates two historical claims that are often conflated. The priority claim is strong: the supplied RacerPro manual explicitly says that \nrql{} was among the first expressive DL query languages with \naf{} and projection, and it further claims that \nrql{} was at that time the only practically available \owl{} query language for such autoepistemic queries. In the technical sense of \texttt{NEG} applied to projected query bodies and defined query bodies, \nrql{} had negated-subquery and universal closed-world-query idioms years before SPARQL 1.1 standardized \texttt{FILTER NOT EXISTS}, \texttt{MINUS}, and subqueries. The influence claim is weaker: priority and conceptual anticipation do not prove that SPARQL 1.1, \shacl{}, or property-graph query languages such as Cypher directly took their ideas from \nrql{}. The report therefore treats direct influence as undocumented unless explicit citations or design records show it.
+
+The genuinely new or partially new conceptual contributions of \shacl{} are therefore not the ability to say ``a required value is missing'' or ``an ontology element lacks an annotation.'' Those patterns were already expressible in \nrql{}. The remaining semantic novelties are mostly (i) a first-class shape-conformance relation over \rdf{} graphs, rather than an answer-set query discipline; (ii) \rdf{} term and graph structure as the primitive validation universe; (iii) built-in regular property-path evaluation, especially unbounded path operators, over the raw \rdf{} graph; and (iv) when \shacl{}-SPARQL is admitted, the imported SPARQL algebra and SPARQL term/function vocabulary. Even these differences often disappear if the relevant \rdf{} term structure or path closures are mirrored or materialized into a \racer{} substrate. Conversely, \nrql{} was stronger than \shacl{} Core in its native integration of \owl{} reasoning with local closed-world querying and rule-based \abox{} augmentation.
+\end{abstract}
+
+\section*{Generative AI authorship and independence declaration}\label{sec:ai-declaration}
+\addcontentsline{toc}{section}{Generative AI authorship and independence declaration}
+This report was authored by a generative AI system, OpenAI GPT-5.5 Pro. The human user supplied the research question, the uploaded RacerPro manuals, clarifications about Racer/nRQL features, and requests to examine particular historical claims. Those inputs were treated as source material and hypotheses to be assessed, not as conclusions to be adopted automatically.
+
+The analytical findings in this report were not coerced and were not accepted merely because they were suggested, strongly suggested, emphasized, or desired by the user. Where the user proposed interpretations---for example, the significance of negated projected subqueries, the OWL/Data Mirroring Substrate, property-graph-like substrate encodings, or the approximate ``80 percent'' headline---the report either checked those interpretations against the available manual evidence and logical comparison, or else marked them as estimates, qualifications, or undocumented influence claims. The report's distinctions between priority, conceptual anticipation, and direct influence reflect the AI author's independent judgment based on the evidence available in this conversation.
+
+This declaration should not be read as a claim that the report is archival proof of historical influence. In particular, the report credits Racer/nRQL as strong prior art where supported by the uploaded manuals, but it does not assert documented causal influence on SPARQL 1.1, SHACL, Cypher, or other property-graph query languages unless independent citations or design records establish such influence.
+
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\section{Question and scope}
+
+The question is not whether \shacl{} became a standard, attracted more implementations, or integrated better with generic RDF tooling. Those are important historical facts, but they are outside the scope requested here. The question is conceptual and semantic:
+
+\begin{quote}
+What did \shacl{} make expressible as a constraint language that was not already expressible, in principle, in \racer{} by \nrql{} plus the substrate representation layer, the mirror data substrate, and hybrid \nrql{} queries?
+\end{quote}
+
+This report uses a generous interpretation of ``possible with \nrql{}'' because that matches the system described in the RacerPro manuals. The comparison includes:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \nrql{} \abox{} queries with classical negation, \naf{}, projection, union, and conjunction.
+  \item DL-aware query atoms evaluated by logical entailment over the \racer{} knowledge base.
+  \item Rules whose antecedents are \nrql{} query bodies and whose consequences are generalized \abox{} assertions.
+  \item Concrete-domain and datatype predicates, including string and numeric predicates.
+  \item Group-by and aggregation operators, mentioned in the user guide as part of \nrql{}'s expressive query facilities.
+  \item Complex \tbox{} queries, treated in the guide as \nrql{} queries over a taxonomy \abox{}.
+  \item Hybrid queries over an \abox{} plus an associated substrate representation layer.
+  \item The mirror data substrate, including its use for \owl{} documents, annotations, and told datatype or annotation values.
+\end{enumerate}
+
+The main sources for the \racer{} side are the uploaded \emph{RacerPro User's Guide Version 2.0} and \emph{RacerPro Reference Manual Version 1.9}. The user guide explicitly describes \nrql{} as an expressive query language for DL systems with variables over named domain objects, \naf{}, a projection operator, group-by, and aggregation \cite[p.~4]{racerug}. Its summary of \nrql{} features emphasizes compositional semantics, variables bound by logical entailment, \naf{} and classical negation, concrete-domain constraints, projection, datatype/annotation retrieval, complex \tbox{} queries, lambda expressions, aggregation, rules, and hybrid substrate queries \cite[pp.~81--84]{racerug}. The mirror data substrate is described as automatically creating corresponding substrate objects for objects in an \abox{} and, for \owl{} KBs, for elements in the \owl{} KB; it also exposes annotation and told datatype values to substrate queries \cite[pp.~137--143]{racerug}.
+
+The \shacl{} side is split into \shacl{} Core, \shacl{}-SPARQL, and, where relevant, \shacl{} Advanced Features. \shacl{} Core is the shape language with standard constraint components such as \texttt{sh:minCount}, \texttt{sh:maxCount}, \texttt{sh:class}, \texttt{sh:datatype}, \texttt{sh:nodeKind}, \texttt{sh:closed}, logical combinators, qualified value shapes, and property paths. \shacl{}-SPARQL permits constraints written as SPARQL queries. \shacl{} Advanced Features adds rule-like mechanisms, but it is not needed for most validation examples discussed here.
+
+
+\section{A calibrated headline: the ``80\%'' claim}\label{sec:calibrated-headline}
+
+The compact way to state the result is this:
+
+\begin{quote}
+\textbf{For the common OWL/RDF integrity-validation repertoire that 
+SHACL is often used for today, a large majority---plausibly on the order of 80\%---was already expressible about twenty years ago in RacerPro via 
+\nrql{}, \naf{}, projection, rules, concrete-domain/datatype predicates, and the substrate/mirror-data representations.}
+\end{quote}
+
+This is intentionally not presented as a measured bibliometric or industrial-usage statistic. Establishing a literal percentage would require a corpus of current SHACL shapes from production systems and a reproducible coding scheme. The point is instead a scoped technical estimate about the usual denominator in SHACL discussions: required properties, missing values, cardinalities, type constraints, datatype and string constraints, qualified value restrictions, disjointness/equality constraints, annotation-governance constraints, ontology metadata checks, and closed-world absence-of-counterexample constraints over finite RDF/OWL data.
+
+Within that denominator, the estimate is strong. The following categories, which account for much of ordinary SHACL practice, were already in reach of 2005-era \nrql{} plus Racer:
+
+\begin{longtable}{p{0.43\linewidth}p{0.48\linewidth}}
+\toprule
+\textbf{Common SHACL use-case family} & \textbf{Racer/nRQL status} \\
+\midrule
+Required value or missing property, e.g. \texttt{sh:minCount 1} & Expressible as \texttt{NEG} over a projected successor query, or by the documented known-successor idiom. \\
+\addlinespace
+Maximum/minimum cardinality and duplicate-value checks & Expressible through query patterns, inequality, aggregation/grouping where needed, and local closed-world violation queries. \\
+\addlinespace
+All values of a property must satisfy a type or shape condition & Expressible as absence of projected counterexamples: no known value exists that fails the required condition. \\
+\addlinespace
+Qualified value constraints & Expressible by projecting away the witness variable and checking existence or non-existence of values satisfying a class, role, datatype, or substrate predicate condition. \\
+\addlinespace
+Ontology-element and annotation-governance checks & Expressible when OWL classes, properties, axioms, annotations, told datatype values, and annotation values are mirrored into the data substrate. \\
+\addlinespace
+Datatype, numeric, string, and concrete-domain checks & Supported in the Racer/nRQL setting to the extent documented concrete-domain and substrate predicates cover the required operations. \\
+\addlinespace
+Rule-derived validation predicates and repair/augmentation patterns & Supported through nRQL rules whose antecedents are query bodies and whose consequents add generalized ABox assertions. \\
+\bottomrule
+\end{longtable}
+
+The residual roughly ``20\%'' should be read as the part of SHACL practice that is genuinely more RDF-native or SPARQL-specific than the usual OWL-centric integrity-constraint fragment. Examples include native RDF term inspection over raw graph nodes, language-tag-specific constraints such as unique-language validation unless language tags are mirrored as queryable values, closed-shape checks over arbitrary predicate positions unless the substrate exposes triples or predicates as first-class query objects, unbounded regular property paths over raw RDF graphs, and SHACL-SPARQL constraints whose substance depends on SPARQL-specific algebra, term functions, or property-path machinery.
+
+So the intended claim is neither that SHACL added nothing nor that every possible SHACL-SPARQL program had a direct nRQL equivalent. The intended claim is that SHACL's famous practical niche---closed-world validation of OWL/RDF data---was substantially prefigured and implemented in Racer/nRQL. The genuinely new part is smaller and more precise: RDF-native shape conformance, built-in validation-result semantics, native graph-term/path machinery, and SPARQL-specific facilities when SHACL-SPARQL is used.
+
+
+\section{Historical priority: negated subqueries and universal closed-world queries}
+
+\subsection{What can be substantiated from the RacerPro sources}
+
+The strongest historically relevant statement in the supplied manual occurs in the early overview of \nrql{}. The guide says that \nrql{} was ``one of the first expressive query languages for DL systems'' and immediately lists conjunctive queries, variables over named domain objects, \naf{}, a projection operator, group-by, and aggregation operators \cite[p.~4]{racerug}. A few pages later, in the feature summary, it makes a still stronger claim for the \owl{} setting: \nrql{} is described as the only practically available \owl{} query language at that time supporting execution of such ``autoepistemic'' queries, namely queries that ask for what is known and what is not known in the KB \cite[p.~82]{racerug}.
+
+The manual also documents the exact technical idiom that matters for the comparison with later SPARQL and \shacl{} practice. \nrql{} query bodies are built compositionally with \texttt{and}, \texttt{union}, \texttt{neg}, and \texttt{project-to} \cite[pp.~81--82]{racerug}. The \texttt{NEG} constructor implements \naf{} \cite[pp.~113--117]{racerug}. The \texttt{project-to} operator can be placed inside a query body, not only in the final answer head, and the guide explicitly explains that the correct way to ask for individuals with no known $R$-successor satisfying a condition is to apply \texttt{NEG} after the internal projection \cite[pp.~119--120]{racerug}:
+
+\begin{lstlisting}[language=nrql,caption={nRQL negated projected query body, i.e. an anti-existential subquery.}]
+(retrieve (?x)
+  (neg (project-to (?x)
+         (and (?x c) (?x ?y r) (?y d)))))
+\end{lstlisting}
+
+This is, in modern database terminology, an anti-semi-join or \texttt{NOT EXISTS} pattern over a projected subquery. In addition, \nrql{} defined queries can be used wherever a query body is accepted and can themselves be \naf{}-negated \cite[pp.~120--122]{racerug}:
+
+\begin{lstlisting}[language=nrql,caption={nRQL negation of a defined query body.}]
+(defquery mother-of (?x ?y)
+  (and (?x woman) (?x ?y has-child)))
+
+(retrieve (?a ?b)
+  (neg (substitute (mother-of ?a ?b))))
+\end{lstlisting}
+
+Thus, if the phrase ``negated subquery'' is understood semantically rather than in the exact SPARQL surface syntax, \nrql{} plainly had it: a query expression could contain a projected or named query body and could apply \naf{} to that body. This is the mechanism needed for universal closed-world queries.
+
+\subsection{Universal closed-world queries}
+
+Universal constraints over a finite active domain are normally reduced to absence of counterexamples. For a fixed focus object $x$,
+\[
+  \forall y\,(P(x,y) \rightarrow Q(y))
+\]
+can be checked by asking whether there is no $y$ such that $P(x,y)$ and not $Q(y)$:
+\[
+  \neg \exists y\,(P(x,y) \wedge \neg Q(y)).
+\]
+Under closed-world query semantics, this becomes a projected failure query. The query that returns conforming focus objects has an outer \texttt{NEG} over the projected counterexample set:
+
+\begin{lstlisting}[language=nrql,caption={Closed-world universal condition by absence of counterexamples.}]
+(retrieve (?x)
+  (and (?x FocusClass)
+       (neg
+         (project-to (?x)
+           (and (?x ?y P)
+                (neg (?y Q)))))))
+\end{lstlisting}
+
+The corresponding violation query simply returns the projected counterexample focus objects:
+
+\begin{lstlisting}[language=nrql,caption={Violation query for a failed closed-world universal condition.}]
+(retrieve (?x)
+  (and (?x FocusClass)
+       (project-to (?x)
+         (and (?x ?y P)
+              (neg (?y Q))))))
+\end{lstlisting}
+
+The same shape appears in \shacl{} as a universal value constraint, for example ``all values of path $P$ conform to shape $Q$''. \shacl{} expresses it as a shape-conformance condition; \nrql{} can express both the conforming objects and the violating objects by choosing whether the projected counterexample body is negated. At the conceptual level, the universal closed-world query pattern was therefore already present in \nrql{}.
+
+\subsection{Comparison with SPARQL 1.0 and SPARQL 1.1}
+
+The relevant dates support the priority claim. The RacerPro bibliography lists \emph{Querying the Semantic Web with Racer + nRQL} in 2004 and the formal \nrql{} semantics paper \emph{A high performance semantic web query answering engine} in 2005 \cite[p.~213,215]{racerug}. SPARQL 1.0 became a W3C Recommendation in 2008 \cite{sparql10}; SPARQL 1.1 became a W3C Recommendation in 2013 \cite{sparql}. SPARQL 1.1 is the version that standardized general negation constructs such as \texttt{FILTER NOT EXISTS} and \texttt{MINUS}, along with subqueries. SPARQL 1.0 had \texttt{OPTIONAL} plus \texttt{FILTER(!BOUND(...))}, which could simulate many simple negation-as-failure idioms, but it did not have the general SPARQL 1.1 negation and subquery apparatus.
+
+Therefore the cautious, well-supported statement is this:
+
+\begin{quote}
+By the documented 2004--2005 \nrql{} publications, and certainly by the user-guide semantics, \nrql{} already supported negated projected query bodies and negated defined query bodies for RDF/OWL/DL querying. This predates SPARQL 1.1's standardized \texttt{FILTER NOT EXISTS}, \texttt{MINUS}, and subquery features by several years. The supplied manual even characterizes \nrql{} as the only practically available \owl{} query language of its time for such autoepistemic queries.
+\end{quote}
+
+The stronger statement, ``\nrql{} was globally the first OWL/Semantic Web query language with negated subqueries,'' is plausible in the narrower \owl{}/DL-query sense, but it is a historical priority claim that ideally requires an exhaustive comparison with every contemporary RDF query language, rule language, and research prototype. The manuals support ``one of the first'' and ``the only practically available OWL query language'' for the autoepistemic feature; they do not by themselves prove global firstness over every experimental system.
+
+\section{The data substrate and property graphs}
+
+\subsection{Racer substrate graphs as property-graph encodings}
+
+The RacerPro substrate layer is also relevant to property graphs. The user guide defines a data substrate as a node- and edge-labeled directed graph whose labels may be built from Common Lisp symbols, strings, numbers, and characters \cite[p.~133]{racerug}. It then describes hybrid queries in which some atoms address the \abox{} and other atoms address the associated substrate \cite[pp.~133--137]{racerug}. The mirror data substrate creates corresponding substrate data objects for \abox{} objects and, for \owl{} KBs, for \owl{} elements; it also exposes annotation relationships, annotation values, datatype values, and datatype roles as queryable substrate data \cite[pp.~137--143]{racerug}.
+
+A contemporary property graph is normally described as a directed graph whose vertices and edges can carry labels and key-value properties. A Racer data substrate is not identical to every modern property-graph data model: in particular, modern property graphs usually treat edges as first-class entities with their own property maps. Still, the substrate can encode property graphs straightforwardly. Vertices become substrate nodes; graph edges become substrate edges; vertex properties become node labels, attached data nodes, or substrate predicates; and edge properties can be represented as edge labels, attached value nodes, or reified edge objects. Once encoded, hybrid \nrql{} queries can combine property-graph-style traversal and attribute filtering with DL reasoning over the mirrored or associated \abox{}.
+
+This means that property-graph-style data modeling was not foreign to the \racer{}/\nrql{} architecture. The substrate component was already a finite labeled graph model with graph predicates and hybrid links to \owl{} reasoning.
+
+\subsection{Origins of property graphs: priority versus lineage}
+
+The broader property-graph lineage is not a single clean invention point. It descends from older attributed and labeled graph models, semantic networks, object-oriented graph database models, and graph database systems. The graph-database survey literature before the current property-graph wave already documented many graph data models and query languages \cite{angles2008}. The specific term ``property graph'' became prominent in the Neo4j/TinkerPop/Blueprints ecosystem around the late 2000s and early 2010s, with later formal and industrial descriptions of property-graph query languages such as Cypher \cite{rodriguez2010,cypher2018}.
+
+Against that background, the fairest statement is not that \nrql{} or Racer invented property graphs. The fair statement is narrower but still important:
+
+\begin{quote}
+Racer's substrate layer provided a labeled directed graph representation, graph predicates, hybrid graph-plus-DL queries, and an \owl{} mirroring mechanism. This gave \nrql{} a way to encode and query property-graph-like structures before the current property-graph ecosystem became dominant, and at least contemporaneously with the early public emergence of the modern property-graph terminology.
+\end{quote}
+
+Again, this is a priority/anticipation claim, not a documented direct-lineage claim.
+
+\section{Influence on SPARQL 1.1, SHACL, and property-graph query languages}
+
+\subsection{Methodological distinction}
+
+Historical comparison must distinguish three different claims:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Prior art:} \nrql{} had a feature before a later language standardized or popularized a similar feature.
+  \item \textbf{Conceptual convergence:} two communities independently developed similar mechanisms because they faced the same finite graph/query/constraint problem.
+  \item \textbf{Direct influence:} designers of the later language knew of, used, cited, or intentionally built on \nrql{} or Racer.
+\end{enumerate}
+
+The first claim is well supported for negated projected queries and local closed-world OWL querying. The second claim is highly plausible. The third claim requires documentary evidence such as citations, design notes, acknowledgments, mailing-list discussions, or shared implementation histories. In the absence of such evidence, direct influence should not be asserted.
+
+\subsection{SPARQL 1.1}
+
+SPARQL 1.1's \texttt{FILTER NOT EXISTS}, \texttt{MINUS}, and subqueries are conceptually close to \nrql{}'s \texttt{NEG} over projected query bodies, at least for the finite graph-query fragment. But SPARQL's documented lineage is primarily the RDF query-language and database-query lineage, including earlier RDF query systems and SQL-style constructs. The SPARQL specifications themselves do not present these features as inherited from \nrql{}.
+
+The strongest fair conclusion is therefore:
+
+\begin{quote}
+\nrql{} anticipated, in an OWL/DL-aware Semantic Web query setting, the negated-subquery patterns that SPARQL 1.1 later made standard for RDF graph querying. I do not have documentary evidence that SPARQL 1.1 took direct inspiration from \nrql{}.
+\end{quote}
+
+\subsection{SHACL}
+
+\shacl{}'s closed-world validation style overlaps heavily with \nrql{} violation-query idioms. However, the documented SHACL design lineage is more visibly connected to RDF validation, SPARQL constraints, SPIN, OSLC Resource Shapes, and Shape Expressions than to DL query languages \cite{spin,shacl}. This does not diminish the technical priority of \nrql{} for OWL-centric closed-world queries; it means that direct influence is not established by the visible citation trail.
+
+The accurate claim is:
+
+\begin{quote}
+Many of SHACL's practical use cases had already been expressible in \nrql{} plus Racer's mirror/substrate machinery. SHACL should therefore be viewed less as the invention of closed-world constraints for OWL data and more as an RDF-native shape-conformance formulation of a constraint idea that \nrql{} had already operationalized for OWL/DL KBs.
+\end{quote}
+
+\subsection{Cypher and property-graph query languages}
+
+Cypher and related property-graph query languages address graph-pattern matching, traversal, and property filtering over labeled property graphs. \nrql{}'s hybrid substrate queries address a related problem: graph-pattern and predicate querying over a labeled substrate, optionally coupled to DL reasoning. There is genuine conceptual overlap. But current property-graph query languages seem to have emerged from graph-database and application-development needs, not from the OWL/DL reasoner-query tradition.
+
+Thus the fair conclusion is:
+
+\begin{quote}
+\nrql{} and Racer's substrate machinery should be recognized as prior Semantic Web/DL technology capable of encoding property-graph-like structures and querying them in hybrid form. I do not have evidence that Cypher or other property-graph languages directly borrowed from \nrql{}.
+\end{quote}
+
+\subsection{On non-credit and bibliographic omissions}
+
+If later Semantic Web validation or graph-query literature presents closed-world constraints, negated graph patterns, or universal constraint queries as if they emerged only with SPARQL 1.1 or SHACL, that history is incomplete. Racer/\nrql{} deserves to be mentioned as prior art for OWL-aware autoepistemic querying, negated projected query bodies, and hybrid graph-plus-DL querying. The absence of citations in later standards and industrial language documents is best described as a bibliographic and disciplinary gap unless direct knowledge and deliberate non-attribution can be shown.
+
+
+\section{Semantic baseline: what nRQL already had}
+
+\subsection{Open-world OWL plus local closed-world querying}
+
+\owl{} axioms are interpreted under open-world semantics. An existential restriction can imply that an individual has some filler without requiring a named, explicitly asserted filler in the \abox{}. Therefore an \owl{} axiom of the form ``every parent has some child'' is not a data-completeness constraint.
+
+\nrql{} already addressed this gap. The RacerPro guide explicitly distinguishes classical negation from \naf{} and uses \naf{} for measuring the completeness of modeling in an \abox{} \cite[pp.~113--116]{racerug}. The guide's own example is very close to the familiar \shacl{} use case: retrieve people without known, explicitly modeled children. It explains why a naive negated binary role atom gives the wrong answer after projection, then gives the correct idiom:
+
+\begin{lstlisting}[language=nrql,caption={nRQL idiom for missing known successors.}]
+(retrieve (?x)
+  (neg (project-to (?x) (?x ?y has-child))))
+\end{lstlisting}
+
+The manual also states that this is equivalent to using \texttt{has-known-successor} \cite[pp.~115--116,119--120]{racerug}. Thus the central \shacl{} pattern
+
+\begin{lstlisting}[language=turtle,caption={SHACL idiom for the same missing-successor constraint.}]
+ex:ParentShape
+  a sh:NodeShape ;
+  sh:targetClass ex:Parent ;
+  sh:property [
+    sh:path ex:hasChild ;
+    sh:minCount 1
+  ] .
+\end{lstlisting}
+
+has a direct \nrql{} counterpart:
+
+\begin{lstlisting}[language=nrql,caption={nRQL violation query for the parent example.}]
+(retrieve (?x)
+  (and (?x Parent)
+       (neg (project-to (?x) (?x ?y has-child)))))
+\end{lstlisting}
+
+This is not a marginal feature. It is precisely the combination of active-domain bindings, projection, and \naf{} that makes local closed-world constraints possible while retaining DL reasoning for positive atoms.
+
+\subsection{Positive atoms as entailment, negative atoms as failure to find answers}
+
+A central semantic distinction is that \nrql{} positive \abox{} atoms are not merely syntactic triple checks. The user guide says that a variable is bound to an \abox{} individual only if the individual satisfies the query, and that satisfaction means the query after substitution is logically entailed by the KB \cite[p.~82]{racerug}. Thus an \nrql{} atom such as
+
+\begin{lstlisting}[language=nrql]
+(?x Parent)
+(?x ?y hasChild)
+\end{lstlisting}
+
+can exploit \racer{}'s DL reasoning, depending on the selected reasoning mode. At the same time, \texttt{NEG} can be used to compute a complement relative to the active domain of known individuals or substrate nodes. This combination gives \nrql{} a hybrid epistemic profile: open-world entailment for positive DL atoms, closed-world failure for selected query subexpressions.
+
+This profile is already close to how \shacl{} is often used over \owl{} data: shapes validate a finite graph under a closed-world reading, while the graph may be the asserted graph, an RDFS/OWL-materialized graph, or a graph supplied by an entailment-aware processor. The difference is that \racer{} made the DL-entailment side native, whereas \shacl{} requires an explicit entailment/materialization choice outside the shape language.
+
+\subsection{Rules and ABox augmentation}
+
+\nrql{} also had a rule mechanism. The user guide describes rules as an \abox{} augmentation mechanism; rule antecedents are ordinary \nrql{} query bodies and rule consequences are generalized \abox{} assertions \cite[pp.~125--127]{racerug}. The reference manual states that \texttt{firerule} is the rule equivalent of \texttt{retrieve}, that there are no \tbox{} rules, and that non-monotonic rules can be written because of \naf{} \cite[pp.~160--161]{racerrm}.
+
+For example, the guide gives a rule that creates a new child for each known mother lacking a known child:
+
+\begin{lstlisting}[language=nrql,caption={ABox augmentation with a missing-successor antecedent.}]
+(firerule
+  (and (?x mother)
+       (neg (?x (has-known-successor has-child))))
+  ((instance (new-ind first-child-of ?x) human)
+   (related (new-ind first-child-of ?x) ?x has-mother)))
+\end{lstlisting}
+
+This is more than validation. It is update-producing, possibly non-monotonic \abox{} augmentation. \shacl{} Core does not provide this. \shacl{} Advanced Features has rules, but the conceptual pattern of query antecedent plus generated assertions was already present in \racer{}.
+
+\subsection{Concrete domains, datatypes, strings, and aggregation}
+
+The user guide emphasizes that \nrql{} supports complex retrieval conditions over concrete-domain attribute fillers and \owl{} datatype-property fillers \cite[pp.~82--83]{racerug}. It also mentions group-by and aggregation operators in the historical overview of \nrql{} \cite[p.~4]{racerug} and later describes lambda expressions that can implement efficient aggregation operators such as \texttt{sum} and \texttt{avg} \cite[p.~83]{racerug}. The substrate language additionally supports data predicates over symbols, strings, numbers, and characters, including string search and numeric comparison \cite[pp.~136--137,155--156]{racerug}.
+
+This matters because several \shacl{} constraints are often presented as novel because they are not \owl{} axioms: value range checks, string checks, datatype checks, and value comparisons. But these were not foreign to \nrql{}. They were already expressible either on the concrete-domain side, the \owl{} datatype side, or the substrate side.
+
+\subsection{TBox queries}
+
+The user guide describes complex \tbox{} queries and states that \nrql{} \tbox{} queries are essentially \nrql{} \abox{} queries posed to a specific ``taxonomy \abox{}'' constructed from the \tbox{} taxonomy \cite[p.~132]{racerug}. Therefore constraints over classes and subclass patterns were not intrinsically outside \nrql{}.
+
+This matters for shape-like governance rules such as:
+
+\begin{quote}
+Every class below a given superclass must have a label, definition, provenance annotation, or axiom annotation of a specified kind.
+\end{quote}
+
+Without the substrate/mirroring context, one might incorrectly classify such constraints as ``metadata validation'' that \nrql{} could not express. With \tbox{} queries and mirroring, that classification is too strong.
+
+\subsection{The substrate representation layer and hybrid queries}
+
+The substrate representation layer is the key feature for a fair comparison. The user guide says that a substrate can be associated with an \abox{} to form a hybrid representation; \nrql{} is then a hybrid query language in which some atoms address the \abox{} and other atoms address the substrate \cite[pp.~133--137]{racerug}. The guide explicitly motivates this by saying that expressive means not allowed in the \abox{} part for decidability reasons can be offered in the substrate part for constraint and model checking \cite[pp.~83--84]{racerug}.
+
+A data substrate is a node- and edge-labeled directed graph whose labels are built from Common Lisp symbols, strings, numbers, and characters \cite[p.~133]{racerug}. Substrate variables are distinct from \abox{} variables but can be bound in parallel with corresponding \abox{} objects \cite[pp.~135--136]{racerug}. Data predicates can be used in node and edge query atoms; the guide explicitly shows substring search and binary numeric comparison, including comparisons between nodes even where no explicit edge exists \cite[pp.~136--137]{racerug}.
+
+This is already very close to a finite graph validation language. It also explains why the right comparison is not ``\shacl{} versus \owl{}'' or even ``\shacl{} versus DL queries,'' but ``\shacl{} versus DL-aware finite graph model checking plus \naf{} and rules.''
+
+\subsection{The OWL/Data Mirroring Substrate}
+
+The mirror data substrate is decisive. The guide describes it as automatically creating a corresponding, appropriately labeled substrate data object for every object in a given \abox{}; when an \owl{} file has been read, mirroring creates data substrate objects for elements in the \owl{} KB \cite[p.~137]{racerug}. It creates nodes for \abox{} individuals, concrete-domain objects, and concrete-domain values, and edges for related and constrained assertions \cite[pp.~138--139]{racerug}. It adds markers for \abox{} individuals, concrete-domain values, role relationships, attribute relationships, told-value relationships, and, in the \owl{} case, markers such as \texttt{:owl-annotation}, \texttt{:owl-annotation-relationship}, \texttt{:owl-annotation-value}, \texttt{:owl-datatype-value}, and \texttt{:owl-datatype-role} \cite[pp.~140--141]{racerug}.
+
+The manual then explains that, for \owl{} KBs, the mirror data substrate is valuable because \owl{} KBs often contain annotations and told XML Schema datatype values; with the mirror one can query resources whose annotation-property fillers contain a substring, and variables can be bound to told datatype or annotation fillers because these told values are accessible as substrate nodes \cite[pp.~141--143]{racerug}.
+
+Therefore the following claim would be false:
+
+\begin{quote}
+\shacl{} can validate ontology annotations, classes, properties, and axiom metadata, whereas \nrql{} was limited to ordinary domain individuals.
+\end{quote}
+
+The manuals show that \nrql{} plus the mirror substrate could query such structures as data. It was therefore possible to express constraints such as ``every subclass axiom of a given kind must carry an annotation of a required kind,'' assuming the relevant axiom/annotation representation is mirrored or otherwise represented in the substrate.
+
+\section{A constraint-theoretic view}
+
+\subsection{Violation queries and shape conformance}
+
+Most integrity constraints can be expressed in one of two equivalent ways:
+
+\begin{enumerate}[leftmargin=2em]
+  \item as a conformance predicate, saying that a focus node satisfies a shape; or
+  \item as a violation query, returning focus nodes and values that do not satisfy the constraint.
+\end{enumerate}
+
+\shacl{} chooses the first presentation as the primary abstraction and produces validation results for non-conformances. \nrql{} naturally chooses the second presentation: a constraint is a query whose answer set should be empty, or whose answers are the violations to be reported.
+
+For example, the \shacl{} condition
+
+\begin{quote}
+Every \texttt{ex:Parent} has at least one \texttt{ex:hasChild} value.
+\end{quote}
+
+has the \nrql{} violation query already shown:
+
+\begin{lstlisting}[language=nrql]
+(retrieve (?x)
+  (and (?x Parent)
+       (neg (project-to (?x) (?x ?y hasChild)))))
+\end{lstlisting}
+
+The conceptual gap between these presentations is small. A validation report is a structured rendering of violation bindings. Conversely, every \nrql{} violation query can be read as defining a shape-like non-conformance condition.
+
+\subsection{Informal expressivity theorem}
+
+The following theorem is not a claim about syntax or implementation convenience. It states the main semantic point of the comparison.
+
+\medskip
+\noindent\textbf{Informal theorem.}
+Assume an \rdf{}/\owl{} graph $G$ is represented in a \racer{} knowledge base together with a faithful substrate mirror $M(G)$ that exposes the \rdf{} terms, triples or role edges, literal values, annotation values, and any required term descriptors as substrate nodes, edges, and labels. For every nonrecursive \shacl{} Core constraint whose property paths are either bounded path expressions or have been materialized as finite binary relations, there is an \nrql{} violation query that returns exactly the nonconforming focus/value bindings, modulo the chosen entailment regime.
+
+\medskip
+\noindent\textbf{Proof sketch.}
+Targets become the outer retrieval domain: \texttt{sh:targetClass C} becomes a concept atom or a mirrored type query; \texttt{sh:targetSubjectsOf p} and \texttt{sh:targetObjectsOf p} become substrate edge queries. Property paths become joins over role atoms or substrate edges, or calls to materialized path relations. \texttt{sh:minCount 1} becomes \texttt{NEG} after \texttt{PROJECT-TO}; higher lower bounds become either existence of $n$ distinct value variables or aggregation. \texttt{sh:maxCount n} becomes existence of $n+1$ pairwise distinct values, or an aggregate count violation. Value-class, datatype, node-kind, language, pattern, and enumeration constraints become concept atoms, concrete-domain/datatype atoms, or substrate label/predicate checks. Logical shape combinators map to \texttt{AND}, \texttt{UNION}, and \texttt{NEG}. Qualified value shapes map to projected existence or counting over values satisfying the nested query body. Closed shapes map to a query for an outgoing mirrored edge whose predicate label is not among the allowed property labels. The construction is by structural induction over the nonrecursive shape expression. \hfill $\square$
+
+\medskip
+
+The theorem intentionally assumes a faithful substrate representation. That assumption is justified for the \owl{}-centric cases discussed in the manuals: RacerPro's mirror substrate already exposed \owl{} annotations and told datatype/annotation values as queryable data \cite[pp.~141--143]{racerug}. For arbitrary non-\owl{} \rdf{} data, an application may need to create an explicit data substrate representation.
+
+\section{Translation patterns}
+
+\subsection{Core constraints}
+
+Table~\ref{tab:translation} summarizes common \shacl{} Core patterns and their \nrql{} counterparts. It does not claim that the translations are syntactically complete for all corner cases; rather, it shows that the constraint pattern was already semantically available.
+
+\begin{longtable}{p{0.25\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\caption{SHACL Core patterns and nRQL equivalents.}\label{tab:translation}\\
+\toprule
+\textbf{SHACL pattern} & \textbf{Semantic reading} & \textbf{nRQL/Racer counterpart} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{SHACL pattern} & \textbf{Semantic reading} & \textbf{nRQL/Racer counterpart} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{sh:targetClass C} & Validate nodes known or treated as instances of $C$. & Concept atom \texttt{(?x C)} if using Racer entailment; mirrored \texttt{rdf:type} query if validating raw graph data. \\
+\addlinespace
+\texttt{sh:targetSubjectsOf p} & Focus nodes with outgoing $p$. & Role/substrate edge atom \texttt{(?x ?y p)} or mirrored edge query. \\
+\addlinespace
+\texttt{sh:minCount 1} & There exists at least one value along the path. & Violation: \texttt{(neg (project-to (?x) path-body))}; exactly the manual's missing known successor idiom. \\
+\addlinespace
+\texttt{sh:minCount n} & At least $n$ distinct values. & Existence of $n$ pairwise distinct value variables, or count/group-by aggregation. \\
+\addlinespace
+\texttt{sh:maxCount n} & No more than $n$ distinct values. & Violation: existence of $n+1$ pairwise distinct values; use injective variables or explicit \texttt{same-as}/inequality constraints. \\
+\addlinespace
+\texttt{sh:class C} & Each value conforms to class $C$. & Violation: path value $v$ plus \texttt{(neg (?v C))}; use DL entailment or raw mirrored type/subclass data depending on desired semantics. \\
+\addlinespace
+\texttt{sh:datatype d} & Each value is a literal of datatype $d$. & Concrete-domain/datatype query atoms, or mirrored literal-value/type markers in the substrate. \\
+\addlinespace
+\texttt{sh:nodeKind} & IRI/blank/literal term-kind restriction. & Substrate labels or markers for term kind, if represented. Not an \owl{} DL fact, but easily a finite-data predicate. \\
+\addlinespace
+\texttt{sh:pattern} & String lexical check. & Concrete-domain string predicates where available; substrate predicates/lambda functions for string checks. The manual explicitly shows substring search in substrate queries. \\
+\addlinespace
+\texttt{sh:languageIn}, \texttt{sh:uniqueLang} & Language-tag constraints over literal terms. & Substrate representation of language tags plus ordinary value comparison/counting. Native only if language tags are mirrored as data. \\
+\addlinespace
+\texttt{sh:hasValue}, \texttt{sh:in} & Required or enumerated values. & Equality/same-as or substrate literal equality; violation via \naf{} if required value is absent. \\
+\addlinespace
+\texttt{sh:equals}, \texttt{sh:disjoint} & Compare value sets of two paths. & Difference queries using projection and \naf{}; disjointness as existence of a shared value. \\
+\addlinespace
+\texttt{sh:lessThan}, \texttt{sh:lessThanOrEquals} & Cross-property value comparison. & Concrete-domain or substrate binary predicates such as numeric/string comparison. \\
+\addlinespace
+\texttt{sh:qualifiedMinCount}, \texttt{sh:qualifiedMaxCount} & Count values satisfying a nested shape. & Project/count values satisfying the nested query body; use \texttt{NEG} for missing qualified values. \\
+\addlinespace
+\texttt{sh:and}, \texttt{sh:or}, \texttt{sh:not}, \texttt{sh:xone} & Boolean combinations of conformance tests. & \texttt{and}, \texttt{union}, \texttt{neg}; exclusive-or via Boolean combinations and counting of satisfied alternatives. \\
+\addlinespace
+\texttt{sh:closed true} & No outgoing properties except allowed properties. & Query for a mirrored outgoing relationship edge whose predicate label is not in the allowed set; requires predicate labels to be represented in the substrate. \\
+\addlinespace
+\texttt{sh:path} sequence/inverse/alternative & Navigate finite graph paths. & Joins with intermediate variables; inverse roles or inverse substrate edges; union for alternatives. \\
+\addlinespace
+\texttt{sh:zeroOrMorePath}, \texttt{sh:oneOrMorePath} & Regular-path reachability. & Native only if the path relation is a transitive role, recursive rule closure, or precomputed substrate relation. This is one of the few real semantic pressure points. \\
+\end{longtable}
+
+\subsection{Axiom and annotation governance}
+
+Because of the mirror data substrate, \nrql{} could query \owl{} annotations and told values as data. Therefore an \shacl{}-SPARQL shape such as the following is not conceptually beyond \nrql{}:
+
+\begin{lstlisting}[language=turtle,caption={SHACL-SPARQL shape for required annotations on subclass axioms.}]
+ex:AnnotatedSubClassAxiomShape
+  a sh:NodeShape ;
+  sh:targetClass owl:Axiom ;
+  sh:sparql [
+    sh:message "Subclass axioms must have a required annotation." ;
+    sh:select """
+      SELECT $this
+      WHERE {
+        $this owl:annotatedSource ?x ;
+              owl:annotatedProperty rdfs:subClassOf ;
+              owl:annotatedTarget ?y .
+        FILTER NOT EXISTS {
+          $this ?p ?v .
+          ?p a owl:AnnotationProperty .
+          ?p ex:annotationKind ex:RequiredKind .
+        }
+      }
+    """
+  ] .
+\end{lstlisting}
+
+A schematic hybrid \nrql{} violation query has the same structure:
+
+\begin{lstlisting}[language=nrql,caption={Schematic nRQL version over a mirrored OWL substrate.}]
+(retrieve (?*ax ?*x ?*y)
+  (and (?*ax ?*x (:owl-annotated-source))
+       (?*ax *rdfs:subClassOf (:owl-annotated-property))
+       (?*ax ?*y (:owl-annotated-target))
+       (neg
+         (project-to (?*ax)
+           (and (?*ax ?*p (:owl-annotation-relationship))
+                (?*p RequiredAnnotationKind))))))
+\end{lstlisting}
+
+The precise marker names depend on the substrate encoding. The point is semantic: once axiom nodes, sources, targets, properties, and annotations are mirrored as data, this is an ordinary finite graph constraint with \naf{} and projection.
+
+\subsection{Closed shapes}
+
+A closed \shacl{} shape is often considered graph-native:
+
+\begin{lstlisting}[language=turtle]
+ex:PersonShape
+  a sh:NodeShape ;
+  sh:targetClass ex:Person ;
+  sh:closed true ;
+  sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path ex:email ; sh:maxCount 1 ] .
+\end{lstlisting}
+
+The violation condition is:
+
+\begin{quote}
+There exists an outgoing property edge from the focus node whose predicate is not \texttt{rdf:type}, \texttt{ex:name}, or \texttt{ex:email}.
+\end{quote}
+
+If the substrate represents outgoing \rdf{} triples or role edges with predicate labels, this becomes an \nrql{} query for an existing relationship edge plus \naf{} against the allowed predicate alternatives:
+
+\begin{lstlisting}[language=nrql]
+(retrieve (?*x ?*y)
+  (and (?x Person)
+       (?*x ?*y (:abox-relationship))
+       (neg
+         (union (?*x ?*y (:predicate (equalp rdf:type)))
+                (?*x ?*y (:predicate (equalp ex:name)))
+                (?*x ?*y (:predicate (equalp ex:email)))))))
+\end{lstlisting}
+
+This is not meant as exact Racer syntax for arbitrary URI symbols; it is the shape of the query. The manual's data-substrate language supports node/edge labels and predicates over labels \cite[pp.~133,136--137,155--156]{racerug}. Thus the semantic requirement is a faithful edge-label representation, not a fundamentally new validation logic.
+
+\section{Where SHACL is not fundamentally new}
+
+\subsection{Missing required values}
+
+This is the clearest non-novelty. \shacl{}'s \texttt{sh:minCount 1} is a direct validation construct, but the underlying semantics is exactly the kind of projected failure query that \nrql{} documented in its missing known successor example. \nrql{} even had syntactic sugar for \texttt{has-known-successor} \cite[pp.~115--116]{racerug}.
+
+\subsection{Constraints over annotations and ontology metadata}
+
+This is the point most easily missed. Once the \owl{} Data Mirroring Substrate is included, \nrql{} can query \owl{} annotation values, datatype values, and other mirrored \owl{} objects as substrate data. The guide explicitly states that this is valuable for \owl{} KBs with annotations and told datatype values and that users can query annotation-property fillers with substring predicates \cite[pp.~141--143]{racerug}. Therefore \shacl{} did not uniquely enable ontology-governance constraints such as required labels, definitions, provenance, or axiom annotations.
+
+\subsection{Local closed-world constraints over an open-world ontology}
+
+The combination of \owl{} semantics and closed-world data constraints is often described as a reason to use \shacl{}. But \nrql{} had already made this combination explicit: positive atoms could be DL-entailment-aware, while \texttt{NEG} and projection supported failure tests over the active domain. The user guide itself states that \naf{} is useful for measuring modeling completeness and calls such queries ``autoepistemic'' \cite[p.~82]{racerug}.
+
+\subsection{Qualified cardinality checks over known values}
+
+\shacl{} qualified value shapes, such as ``at least one child that is a Child,'' translate naturally:
+
+\begin{lstlisting}[language=turtle]
+ex:ParentShape
+  a sh:NodeShape ;
+  sh:targetClass ex:Parent ;
+  sh:property [
+    sh:path ex:hasChild ;
+    sh:qualifiedValueShape [ sh:class ex:Child ] ;
+    sh:qualifiedMinCount 1
+  ] .
+\end{lstlisting}
+
+\begin{lstlisting}[language=nrql]
+(retrieve (?p)
+  (and (?p Parent)
+       (neg
+         (project-to (?p)
+           (and (?p ?c hasChild)
+                (?c Child))))))
+\end{lstlisting}
+
+This uses the same projection-after-existential-hiding pattern that the manual discusses in detail for \texttt{project-to} \cite[pp.~119--120]{racerug}.
+
+\subsection{Rule-like data completion}
+
+\shacl{} Core is not a rule language. \shacl{} Advanced Features adds rules, but \nrql{} rules already had query-body antecedents, generalized \abox{} consequences, creation of new individuals, and non-monotonic behavior through \naf{} \cite[pp.~125--127]{racerug}. Therefore rule-like augmentation is not a conceptual novelty of \shacl{} relative to \nrql{}; if anything, \nrql{} was stronger than \shacl{} Core here.
+
+\section{What is genuinely or conditionally new in SHACL}
+
+\subsection{A first-class conformance relation}
+
+The first genuine conceptual novelty is not expressive power in the narrow query-theoretic sense. It is the choice of a first-class validation semantics:
+
+\begin{quote}
+A data graph $G$ conforms to a shapes graph $S$ when all focus nodes satisfy the applicable shapes, and violations are structured as validation results.
+\end{quote}
+
+\nrql{} could express the same conditions as violation queries, but ``being a shape'' and ``conforming to a shape'' were not its primary semantic objects. In \nrql{}, the primary object is an answer set for a query or a set of generated rule consequences. In \shacl{}, the primary object is conformance/non-conformance of focus nodes to shapes.
+
+This matters conceptually because \shacl{} defines validation as a relation between a data graph and a shapes graph, not as a side convention over arbitrary queries. However, this is a semantic organization of validation, not a strong increase in what constraints can be stated.
+
+\subsection{RDF graph terms as the primitive universe}
+
+\shacl{} validates \rdf{} graphs directly. Its primitive universe includes IRIs, blank nodes, literals, datatype IRIs, language tags, and triples. \nrql{}'s core \abox{} variables range over named individuals; substrate variables range over substrate nodes. The mirror data substrate closes much of this gap for \owl{} KBs, and a user-created data substrate can close more of it. Nevertheless, \rdf{}-term-level validation is native in \shacl{} and represented in \nrql{} only to the extent that the term structure is mirrored.
+
+This distinction is semantic when a constraint depends on term features that \racer{} did not mirror natively. Examples include:
+
+\begin{enumerate}[leftmargin=2em]
+  \item whether a value is a blank node rather than an IRI;
+  \item the exact lexical form of a literal;
+  \item a language tag and not merely the string value;
+  \item syntactic features of \rdf{} collections or reification structures;
+  \item duplicate graph terms that become semantically identical under \owl{} reasoning.
+\end{enumerate}
+
+If those features are encoded as substrate labels, \nrql{} can query them. If they are not encoded, \shacl{} sees them and \nrql{} does not. Thus this is a conditional novelty: native in \shacl{}, dependent on mirroring in \nrql{}.
+
+\subsection{Regular property paths over the raw graph}
+
+\shacl{} property paths inherit a SPARQL-like path language with sequences, inverses, alternatives, and unbounded operators such as zero-or-more and one-or-more paths. Bounded sequences, inverses, and alternatives translate well to \nrql{} joins, inverse roles, and unions. The hard case is unbounded reachability over an arbitrary predicate in the raw \rdf{} graph:
+
+\begin{lstlisting}[language=turtle]
+[ sh:path [ sh:zeroOrMorePath ex:broader ] ; sh:minCount 1 ]
+\end{lstlisting}
+
+This is a regular path query. Plain nonrecursive relational algebra with difference and projection does not define arbitrary transitive closure over finite graphs. \nrql{} can recover the behavior if the property is declared transitive in the \owl{}/DL layer, if a recursive rule/fixpoint computation materializes the closure, or if the closure is precomputed into the substrate. But as a primitive graph-navigation construct independent of \owl{} role declarations, \texttt{sh:zeroOrMorePath} and \texttt{sh:oneOrMorePath} are among the strongest candidates for a genuine semantic addition.
+
+The qualification is important. If the relevant closure is materialized, or if the role semantics already supplies transitivity, then \nrql{} can query it. What \shacl{} adds is direct regular-path validation over the \rdf{} graph.
+
+\subsection{SHACL-SPARQL imports SPARQL algebra and functions}
+
+\shacl{}-SPARQL permits validators written as SPARQL queries. To the extent that those validators rely on SPARQL-specific algebra or functions, they may go beyond native \nrql{} syntax. Examples include SPARQL property paths, subqueries, \texttt{OPTIONAL}, \texttt{MINUS}, \texttt{VALUES}, \texttt{BIND}, RDF term functions such as \texttt{isBlank}, \texttt{isLiteral}, \texttt{datatype}, \texttt{lang}, and the SPARQL expression/function library.
+
+However, this should not be overstated. Many SPARQL patterns used in \shacl{} constraints are just joins, filters, projections, and \texttt{FILTER NOT EXISTS}; those correspond closely to \nrql{} conjunction, substrate predicates, projection, and \naf{}. The manual also notes termination-safe lambda expressions and server-side programming facilities, including aggregation \cite[p.~83]{racerug}. Therefore the gap is not ``SPARQL constraints versus no constraints.'' It is SPARQL's particular RDF algebra and function vocabulary versus \nrql{}'s DL/substrate/lambda vocabulary.
+
+\subsection{Native literal and language constraint components}
+
+\shacl{} Core has named components such as \texttt{sh:languageIn}, \texttt{sh:uniqueLang}, \texttt{sh:pattern}, and \texttt{sh:datatype}. These are semantically convenient because they are defined directly over \rdf{} literal terms.
+
+For \nrql{}, datatype values and annotation values could be retrieved through \owl{} datatype/annotation facilities and the mirror data substrate, and string search was available in substrate predicates \cite[pp.~141--143,155--156]{racerug}. But the manuals do not establish that every \rdf{} literal detail, especially language-tag structure, was always exposed natively. If language tags and lexical forms are mirrored into the substrate, \nrql{} can express the constraints. If not, \shacl{} has native semantic access that \nrql{} lacks.
+
+\subsection{Validation reports, severities, and messages}
+
+\shacl{} defines structured validation results with focus nodes, value nodes, result paths, messages, severities, and source shapes. \nrql{} returns answer tuples or rule consequences. A wrapper could convert \nrql{} answers into a report, but the report vocabulary and result-object semantics are built into \shacl{}.
+
+Because the requested comparison excludes standards and popularity, this should not be treated as a decisive semantic expressivity gain. Still, it is a conceptual difference: \shacl{} makes diagnostic reporting part of the validation model, while \nrql{} leaves reporting as an application convention over answer sets.
+
+\section{Where nRQL was stronger than SHACL Core}
+
+\subsection{Native OWL reasoning inside constraints}
+
+\nrql{}'s positive atoms are evaluated against the \racer{} KB and can exploit DL entailment. Thus a constraint can mix:
+
+\begin{enumerate}[leftmargin=2em]
+  \item entailed class membership;
+  \item entailed role membership;
+  \item classical DL negation;
+  \item \naf{} over projected answer sets;
+  \item substrate model checking over mirrored data;
+  \item concrete-domain and datatype predicates.
+\end{enumerate}
+
+\shacl{} Core, by contrast, validates a data graph. Entailment may be supplied by preprocessing or by a processor's entailment regime, but it is not intrinsic to most shape expressions. Therefore \nrql{} was often semantically stronger for \owl{}-aware constraints.
+
+\subsection{Hybrid semantic atoms}
+
+Hybrid \nrql{} queries can bind \abox{} variables and substrate variables in parallel, allowing a single query to combine semantic \owl{} conditions with graph/data-substrate predicates \cite[pp.~135--137]{racerug}. This is more integrated than the typical \shacl{} Core setup, where graph validation and reasoning are separated by an entailment/materialization boundary.
+
+\subsection{Non-monotonic update rules}
+
+\nrql{} rules could add \abox{} assertions and could be non-monotonic because their antecedents could use \naf{} \cite[pp.~125--127]{racerug}. \shacl{} Core has no update semantics. \shacl{} Advanced Features has rules, but this is not a conceptual capability that postdates \nrql{} in the broad sense relevant to this report.
+
+\section{Boundary cases}
+
+\subsection{Asserted versus entailed validation}
+
+Both systems can be used to validate asserted data or entailed data, but they do so differently. In \nrql{}, the chosen query mode and mirror mode determine how much told versus inferred information participates. The user guide says, for example, that mirroring can use only told syntactic information in one mode, add atomic concept ancestors and synonyms in another, and add further complex concept information in a smarter mode \cite[pp.~139--140]{racerug}. In \shacl{}, the analogous choice is usually made by deciding whether to validate the raw data graph, an entailed graph, or a materialized graph.
+
+Thus the systems answer different questions unless configured carefully:
+
+\begin{itemize}[leftmargin=2em]
+  \item Raw \shacl{}: Does the triple occur in the validation graph?
+  \item Entailment-aware \shacl{}: Does the triple or class relation occur after the selected entailment regime?
+  \item \nrql{} over the \abox{}: Is the atom entailed by the \racer{} KB?
+  \item \nrql{} over the mirror substrate: Is the told or smart-mirrored substrate pattern present?
+\end{itemize}
+
+No semantic comparison is meaningful without fixing this axis.
+
+\subsection{Axiom annotations versus entailed consequences}
+
+A constraint such as
+
+\begin{quote}
+Every asserted subclass axiom must have a provenance annotation.
+\end{quote}
+
+is a finite graph/axiom-object constraint and is expressible in both systems if axiom annotations are represented.
+
+A different constraint is:
+
+\begin{quote}
+Every entailed subclass relation $C \sqsubseteq D$ must have a provenance annotation.
+\end{quote}
+
+This is not a normal annotation constraint, because an entailed relation may not correspond to a single asserted axiom object. It may follow from a proof or chain of axioms. \nrql{} can query the entailed subclass relation through \tbox{} reasoning; \shacl{} can see it only if materialized. But attaching an annotation to the consequence requires a provenance or explanation model in either system. This is not solved by \shacl{} merely by being graph-native.
+
+\subsection{Blank nodes and anonymous OWL existentials}
+
+\shacl{} validates blank nodes as graph terms if they occur in the data graph. \owl{} existential consequences may introduce anonymous model elements that are not graph terms and not named \abox{} individuals. \nrql{} variables in the documented \abox{} language range over named \abox{} individuals or mirrored substrate nodes, not over arbitrary model witnesses. This distinction explains why \texttt{has-known-successor} is so important: it asks for known successors, not merely existentially implied ones.
+
+\section{Answer to the main question}
+
+Under the broad \racer{} setting described in the manuals, the answer is:
+
+\begin{quote}
+\textbf{SHACL did not fundamentally introduce the ability to express closed-world integrity constraints over OWL data, required-property constraints, qualified cardinality constraints, annotation-governance constraints, or many datatype/string checks. These were already expressible in \nrql{} using \naf{}, projection, rules, concrete-domain/datatype predicates, and the mirror/substrate representation layer.}
+\end{quote}
+
+What \shacl{} did introduce at a conceptual/semantic level is narrower:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Not negated subqueries or universal closed-world querying.} Those were already present in \nrql{} through \texttt{NEG} plus \texttt{PROJECT-TO}, and the manuals explicitly connect this to autoepistemic \owl{} querying.
+  \item \textbf{A shape-conformance semantics.} Constraints are first-class shapes whose satisfaction by focus nodes is the core semantic relation. \nrql{} can encode the same violations, but as queries.
+  \item \textbf{A native \rdf{} graph validation universe.} IRIs, blank nodes, literals, language tags, and triples are primitive validation objects. \nrql{} can match this only insofar as those objects are mirrored into a substrate.
+  \item \textbf{Native regular property paths.} Bounded paths translate to \nrql{} joins; unbounded graph reachability is native in \shacl{} paths but requires role transitivity, recursive rule closure, or materialization in \nrql{}.
+  \item \textbf{SPARQL algebra and term functions when SHACL-SPARQL is used.} This imports capabilities that are not identical to \nrql{}'s native query language, especially RDF term functions and SPARQL path/algebra constructs. Many common uses, however, still translate to hybrid \nrql{}.
+  \item \textbf{Built-in diagnostic result objects.} This is semantically about validation reporting, not about the expressibility of the underlying constraints.
+\end{enumerate}
+
+If one excludes standardization, popularity, and tooling, and if one grants \racer{} a faithful substrate representation of the relevant \rdf{} graph and term structure, the remaining fundamental expressivity advantage of \shacl{} Core is quite small. The most defensible hard gap is native regular-path validation over raw \rdf{} graphs. The most important soft gap is that \shacl{} takes \rdf{} graph terms and validation reports as primitives, whereas \nrql{} requires a query/substrate encoding and an application convention for reporting. In that scoped sense, the informal ``80\%'' summary is a fair executive headline: most ordinary \shacl{} use cases that amount to finite, closed-world OWL/RDF integrity checks were already supportable in \nrql{} plus Racer; the remaining minority is concentrated in RDF-native term/path semantics, SHACL's shape-conformance/reporting model, and SPARQL-specific machinery.
+
+\section{Conclusion}
+
+A historically fair comparison should not say that \shacl{} was the first practical way to impose closed-world constraints on \owl{} data, nor that SPARQL 1.1 was the first Semantic-Web setting in which negated subqueries made universal closed-world checks possible. RacerPro's \nrql{} already supplied the essential mechanisms: \naf{}, projection, logical-entailment-aware query atoms, rules, datatype and concrete-domain predicates, group/aggregation, complex \tbox{} queries, and a hybrid substrate layer. The mirror data substrate is especially important because it made \owl{} annotations and told values queryable as finite data, eliminating a common but incorrect distinction between ``domain ABox constraints'' and ``ontology metadata constraints.''
+
+The central semantic difference is instead one of orientation. \nrql{} is a powerful reasoner-integrated query and rule language that can be used to implement validation. \shacl{} is a graph validation language whose semantic objects are shapes, focus nodes, value nodes, paths, and validation results. That orientation gives \shacl{} native \rdf{}-term validation and property-path validation, while \nrql{} gives stronger native integration with \owl{} reasoning and non-monotonic query/rule idioms.
+
+Therefore, the answer to ``what was fundamentally new?'' is not ``constraints'' and not ``closed-world checks.'' It is primarily the \rdf{}-native shape-conformance framework, plus a few graph-specific primitives such as regular paths and native term/literal validation. Most ordinary \shacl{} constraints over \owl{} ontologies, including constraints over classes, properties, subclass axioms, annotations, and explicitly known role fillers, were already within reach of \nrql{} plus RacerPro's substrate machinery.
+
+As a deliberately approximate summary, one can say that perhaps 80 percent of the recurring practical \shacl{} validation patterns seen in OWL/RDF ontology-engineering work were already supportable in \racer{} by 2005, provided the comparison includes \nrql{}, rules, negated projected subqueries, concrete-domain predicates, aggregation, hybrid substrate queries, and the OWL/Data Mirroring Substrate. The percentage is not a survey result; it is a shorthand for the feature-by-feature conclusion of this report. The remaining 20 percent is not unimportant, but it is different in kind: it consists mainly of \rdf{}-native term inspection, regular graph-path validation, exact raw-graph closed-shape validation unless represented in the substrate, and \shacl{}'s own first-class conformance/report vocabulary.
+
+The revised historical conclusion is also that \nrql{} deserves explicit recognition as prior art for negated subqueries in an OWL/Semantic Web query language. The supplied manual documents \texttt{NEG} over projected query bodies and defined queries, identifies \naf{} as a mechanism for autoepistemic OWL querying, and presents \nrql{} as uniquely practical for that purpose at the time. This predates SPARQL 1.1's general negation and subquery facilities. What remains unproven is direct influence: the conceptual debt is clear at the level of prior art and technical anticipation, but not as a documented citation lineage from \nrql{} to SPARQL 1.1, \shacl{}, or Cypher.
+
+\appendix
+\section{Manual evidence summarized}
+
+The following source points from the uploaded manuals are most relevant to the comparison.
+
+\begin{enumerate}[leftmargin=2em]
+  \item The user guide describes \nrql{} historically as an expressive DL query language with conjunctive queries, variables over named domain objects, \naf{}, projection, group-by, and aggregation \cite[p.~4]{racerug}.
+  \item The feature summary states that \nrql{} atoms can be combined with \texttt{and}, \texttt{union}, \texttt{neg}, and \texttt{project-to}; variables bind to \abox{} individuals satisfying the query by logical entailment; \naf{} and classical negation are both available; concrete-domain constraints and datatype/annotation retrieval are supported; projection and aggregation are available; and hybrid substrate queries are supported \cite[pp.~81--84]{racerug}.
+  \item The guide's \naf{} section explains the difference between classical negation and \naf{} and gives the missing-known-child pattern using \texttt{project-to} and \texttt{has-known-successor} \cite[pp.~113--120]{racerug}.
+  \item The rules section defines \nrql{} rules as \abox{} augmentation with ordinary \nrql{} query bodies as antecedents and generalized \abox{} assertions as consequences; it shows non-monotonic behavior and creation of new individuals \cite[pp.~125--127]{racerug}. The reference manual confirms that \texttt{firerule} is the rule counterpart of \texttt{retrieve} and that \naf{} permits non-monotonic rules \cite[pp.~160--161]{racerrm}.
+  \item The substrate section defines a substrate as a node- and edge-labeled directed graph associated with an \abox{}, and hybrid \nrql{} queries as queries containing both \abox{} and substrate atoms \cite[pp.~133--137]{racerug}.
+  \item The mirror data substrate automatically creates substrate data objects for \abox{} objects and, for \owl{} KBs, for elements in the \owl{} KB; it includes markers for \owl{} annotations, annotation relationships, annotation values, datatype values, and datatype roles \cite[pp.~137--141]{racerug}.
+  \item The guide explicitly states that, with the mirror data substrate, users can query \owl{} annotation-property fillers with substring predicates and bind variables to told datatype or annotation fillers because those values are accessible as substrate nodes \cite[pp.~141--143]{racerug}.
+  \item The guide says that \nrql{} was one of the first expressive DL query languages and lists \naf{}, projection, group-by, and aggregation as early features \cite[p.~4]{racerug}. It later describes \nrql{} as the only practically available \owl{} query language of its time for autoepistemic queries \cite[p.~82]{racerug}.
+  \item The guide shows \texttt{NEG} applied to \texttt{project-to} and to defined query bodies, which is the key negated-subquery idiom for closed-world universal constraints \cite[pp.~119--122]{racerug}.
+\end{enumerate}
+
+\begin{thebibliography}{99}
+
+\bibitem{racerug}
+Racer Systems GmbH \& Co. KG.
+\newblock \emph{RacerPro User's Guide Version 2.0}.
+\newblock October 24, 2012. Uploaded as \texttt{users-guide-2-0.pdf}.
+
+\bibitem{racerrm}
+Racer Systems GmbH \& Co. KG.
+\newblock \emph{RacerPro Reference Manual Version 1.9}.
+\newblock October 12, 2010. Uploaded as \texttt{reference-manual.pdf}.
+
+\bibitem{shacl}
+Holger Knublauch and Dimitris Kontokostas, editors.
+\newblock \emph{Shapes Constraint Language (SHACL)}.
+\newblock W3C Recommendation, 20 July 2017.
+\newblock \url{https://www.w3.org/TR/shacl/}.
+
+\bibitem{shaclaf}
+Holger Knublauch, Dimitris Kontokostas, and others.
+\newblock \emph{SHACL Advanced Features}.
+\newblock W3C Note, 8 June 2017.
+\newblock \url{https://www.w3.org/TR/shacl-af/}.
+
+
+\bibitem{sparql10}
+Eric Prud'hommeaux and Andy Seaborne, editors.
+\newblock \emph{SPARQL Query Language for RDF}.
+\newblock W3C Recommendation, 15 January 2008.
+\newblock \url{https://www.w3.org/TR/rdf-sparql-query/}.
+
+\bibitem{spin}
+Holger Knublauch.
+\newblock \emph{SPIN - Modeling Vocabulary}.
+\newblock W3C Member Submission, 22 February 2011.
+\newblock \url{https://www.w3.org/Submission/spin-modeling/}.
+
+\bibitem{angles2008}
+Renzo Angles and Claudio Gutierrez.
+\newblock Survey of graph database models.
+\newblock \emph{ACM Computing Surveys}, 40(1), Article 1, 2008.
+
+\bibitem{rodriguez2010}
+Marko A. Rodriguez and Peter Neubauer.
+\newblock Constructions from dots and lines.
+\newblock \emph{Bulletin of the American Society for Information Science and Technology}, 36(6):35--41, 2010.
+
+\bibitem{cypher2018}
+Nadime Francis, Alastair Green, Paolo Guagliardo, Leonid Libkin, Tobias Lindaaker, Victor Marsault, Stefan Plantikow, Mats Rydberg, Petra Selmer, and Andres Taylor.
+\newblock Cypher: An evolving query language for property graphs.
+\newblock In \emph{Proceedings of the 2018 International Conference on Management of Data (SIGMOD)}, 2018.
+
+\bibitem{sparql}
+Steve Harris and Andy Seaborne, editors.
+\newblock \emph{SPARQL 1.1 Query Language}.
+\newblock W3C Recommendation, 21 March 2013.
+\newblock \url{https://www.w3.org/TR/sparql11-query/}.
+
+\bibitem{owl2direct}
+Boris Motik, Peter F. Patel-Schneider, and Bernardo Cuenca Grau, editors.
+\newblock \emph{OWL 2 Web Ontology Language: Direct Semantics}.
+\newblock W3C Recommendation, 11 December 2012.
+\newblock \url{https://www.w3.org/TR/owl2-direct-semantics/}.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,443 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs,longtable,array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  pdfauthor={Generative AI (Claude Opus 4.8), revised with literature grounding},
+  pdftitle={What Was Conceptually New in SHACL? A Calibrated Re-examination against RacerPro nRQL}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{SHACL vs.\ nRQL (revised)}
+\rhead{\thepage}
+\setlength{\headheight}{14pt}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{0.7em}{}
+
+\theoremstyle{definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+
+\lstdefinelanguage{nrql}{
+  morekeywords={retrieve,and,union,neg,NEG,not,NOT,project-to,project,pi,substitute,firerule,defquery,instance,related,constrained,constraints,in-tbox,in-abox,in-mirror-data-box,enable-data-substrate-mirroring,enable-smart-abox-mirroring,has-known-successor,same-as,NIL,TOP,BOTTOM},
+  sensitive=false,
+  morecomment=[l]{;},
+  morestring=[b]"
+}
+\lstdefinelanguage{turtle}{
+  morekeywords={a,prefix,BASE,PREFIX,true,false},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]"
+}
+\lstset{
+  basicstyle=\small\ttfamily,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  framerule=0.2pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+
+\newcommand{\nrql}{nRQL}
+\newcommand{\racer}{RacerPro}
+\newcommand{\shacl}{SHACL}
+\newcommand{\naf}{negation as failure}
+\newcommand{\abox}{ABox}
+\newcommand{\tbox}{TBox}
+\newcommand{\rdf}{RDF}
+\newcommand{\owl}{OWL}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{1.1in}
+  {\LARGE \bfseries What Was Conceptually New in SHACL?\par}
+  \vspace{0.25in}
+  {\Large \bfseries A Calibrated Re-examination against RacerPro \nrql{},\par}
+  {\Large \bfseries Negation as Failure, and the Data Substrate\par}
+  \vspace{0.5in}
+  {\large Revised edition, with independent literature grounding\par}
+  \vspace{0.9in}
+  {\large Prepared from the RacerPro manuals, the \shacl{} specifications,\par}
+  {\large and primary sources in the description-logic and \rdf{}-validation literature\par}
+  \vspace{0.45in}
+  {\large Drafted by a generative AI system (Claude Opus 4.8)\par}
+  {\normalsize and substantiated against cited publications; see the authorship declaration.\par}
+  \vfill
+  {\large \today\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\begin{abstract}
+This report re-examines a specific historical-semantic question: what did \shacl{} make expressible as a constraint language that was not already expressible, in principle, in \racer{} via \nrql{}, \naf{} (NAF), projection, rules, concrete-domain/datatype predicates, and the substrate / \owl{}\,data-mirroring layer? It revises an earlier draft in four ways. First, it grounds the priority discussion in the description-logic literature rather than in the vendor manual alone: the idea of querying ``what is known'' through an epistemic / minimal-knowledge operator was formalized by Donini et al.\ in 1998 \cite{epistemic}, and the ``effective first-order query'' agenda was crystallized by EQL-Lite in 2007 \cite{eqllite}; \nrql{} (2004--2005) \cite{adl04,nrql05} sits between them as, defensibly, the first \emph{practical, high-performance} engine to offer \naf{} plus projection over an \owl{} knowledge base. Contemporary \rdf{} query languages such as RQL (2002) \cite{rql} and RDQL (January 2004) \cite{rdql} did not offer negated projected subqueries (RDQL admitted only ``safe'' negation with no variables in the negated clause). This supports a \emph{prior-art} and \emph{conceptual-anticipation} claim, but not a claim of \emph{documented influence} on SPARQL~1.1, \shacl{}, or property-graph languages, and not a claim of global ``firstness.''
+
+Second, it replaces the earlier ``informal expressivity theorem''---which assumed away exactly the hard cases---with an explicit \emph{reduction lemma} whose stated assumptions mark the true boundary of the comparison. Third, it sharpens what is genuinely new in \shacl{} to two items with rigorous backing rather than one: (i)~a \emph{recursive} shape-conformance relation, whose semantics is a nontrivial object (partial / stable / well-founded assignments) and whose associated decision problems can be NP-hard or undecidable \cite{recshacl,stableshacl,satcont}; and (ii)~\emph{unbounded regular property paths}, which are provably beyond the nonrecursive \naf{}-plus-projection fragment because transitive closure is not first-order definable \cite{ahoullman,libkin}. \rdf{}-term-native components (node kind, language tags, lexical form) and \shacl{}'s validation-report vocabulary are conditional or organizational differences. Fourth, it adds a section on three \emph{semantic traps} in the naive translation---epistemic-mode mismatch, cardinality counting without a unique-name assumption, and the active-domain-versus-anonymous-witness gap---that the earlier draft underweighted.
+
+The net conclusion is unchanged in spirit but more precise: the large majority of recurring \emph{OWL-centric, finite, closed-world} integrity checks that \shacl{} is used for were already within reach of \nrql{} plus the mirror substrate by 2005, and \nrql{} deserves explicit recognition as prior art for negated projected subqueries in a practical \owl{} query engine. We deliberately attach \emph{no} percentage to ``large majority,'' and we decline the earlier draft's property-graph priority claim as unsupported. The residual novelty of \shacl{} is concentrated, precisely, in recursive shape conformance, native regular-path validation, \rdf{}-term primitives, and the standardized conformance/report model.
+\end{abstract}
+
+\section*{Generative AI authorship and independence declaration}\label{sec:ai-declaration}
+\addcontentsline{toc}{section}{Generative AI authorship and independence declaration}
+This report was drafted by a generative AI system (Claude Opus 4.8). The human user supplied the research question, the RacerPro manuals, and a request to substantiate or disprove the priority claims using external sources. Those inputs were treated as material and hypotheses to be tested, not conclusions to be adopted. Where the user's earlier draft proposed a figure (``80\%''), a property-graph priority claim, or an ``informal theorem,'' this revision either qualifies, rescopes, or withdraws the claim and says so explicitly. Bibliographic claims about dates and contents were checked against the cited publications; the description-logic and \rdf{}-validation references below were located through literature search rather than supplied by the user. The report credits \racer{}/\nrql{} as strong prior art where the manuals and the dated publications support it, and it does not assert documented causal influence on later standards absent a citation trail.
+
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\section{Question, scope, and what changed}\label{sec:scope}
+
+The question is conceptual, not sociological. It is \emph{not} whether \shacl{} became a W3C standard, attracted more implementations, or integrated better with generic \rdf{} tooling; those are real and important facts, and they are out of scope here. The question is:
+
+\begin{quote}
+What did \shacl{} make expressible as a constraint language that was not already expressible, in principle, in \racer{} by \nrql{} plus the substrate representation layer, the mirror data substrate, and hybrid \nrql{} queries?
+\end{quote}
+
+This revision differs from the earlier draft in four substantive ways, each justified in the body:
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Priority is grounded in the literature, not the manual alone} (\S\ref{sec:priority}). The manual's self-description (``the only practically available \owl{} query language of its time'' for autoepistemic queries \cite[p.~82]{racerug}) is a vendor claim. We keep it, but we anchor the substantive priority claim in dated, independent publications and name the contemporaries it is implicitly measured against.
+  \item \textbf{The ``informal theorem'' becomes an explicit reduction} (\S\ref{sec:reduction}) whose assumptions are the point.
+  \item \textbf{Two genuine novelties, with proofs/citations, not one} (\S\ref{sec:new}): recursive shape conformance and unbounded regular paths.
+  \item \textbf{A new section on translation traps} (\S\ref{sec:traps}) and \textbf{withdrawal of the ``80\%'' figure and the property-graph priority claim} (\S\ref{sec:headline}, \S\ref{sec:declined}).
+\end{enumerate}
+
+Throughout, ``possible with \nrql{}'' is read generously, matching the system the manuals describe: \abox{} queries with classical negation, \naf{}, projection, union, and conjunction; DL-aware atoms evaluated by entailment; rules with query-body antecedents and generalized \abox{} consequents; concrete-domain/datatype predicates; group-by and aggregation; complex \tbox{} queries; hybrid \abox{}-plus-substrate queries; and the mirror data substrate for \owl{} documents, annotations, and told datatype/annotation values \cite[pp.~4,\,81--84,\,113--143]{racerug}. On the \shacl{} side we distinguish \shacl{} Core, \shacl{}-SPARQL, and \shacl{} Advanced Features \cite{shacl,shaclaf}.
+
+\section{Background, compressed}\label{sec:background}
+
+\subsection{nRQL's epistemic profile}
+\nrql{} query bodies are built compositionally with \texttt{and}, \texttt{union}, \texttt{neg}, and \texttt{project-to} \cite[pp.~81--82]{racerug}. A \emph{positive} atom binds a variable only to individuals for which the atom, after substitution, is \emph{logically entailed} by the \racer{} knowledge base \cite[p.~82]{racerug}; positive atoms are therefore open-world and DL-aware. The \texttt{neg} constructor is \naf{}: it succeeds when the enclosed body has no answer over the active domain of \emph{known} individuals (or substrate nodes) \cite[pp.~113--117]{racerug}. Crucially, \texttt{project-to} may appear \emph{inside} a body, so \naf{} can be applied to a projected subquery---an anti-semi-join / \texttt{NOT EXISTS} pattern. This hybrid---open-world entailment for positive atoms, closed-world failure for selected subexpressions---is exactly the ``autoepistemic'' profile the manual advertises \cite[p.~82]{racerug}, and it is the technical heart of the comparison.
+
+\subsection{The substrate and the mirror}
+A \emph{data substrate} is a node- and edge-labeled directed graph whose labels are Lisp symbols, strings, numbers, and characters \cite[p.~133]{racerug}; a substrate may be associated with an \abox{} so that \nrql{} becomes a \emph{hybrid} query language addressing both \cite[pp.~133--137]{racerug}. The \emph{mirror data substrate} automatically materializes substrate objects for \abox{} individuals and, for an \owl{} KB, for \owl{} elements---adding markers such as \texttt{:owl-annotation}, \texttt{:owl-annotation-relationship}, \texttt{:owl-annotation-value}, \texttt{:owl-datatype-value}, and \texttt{:owl-datatype-role}---so that annotations and told datatype/annotation fillers become \emph{queryable data} \cite[pp.~137--143]{racerug}. This is the single most under-appreciated fact for a fair comparison: it refutes the common claim that \nrql{} was ``only'' an \abox{} query language unable to reach ontology metadata.
+
+\subsection{SHACL, compressed}
+\shacl{} Core defines \emph{shapes} (node and property shapes) with constraint components (\texttt{sh:minCount}, \texttt{sh:maxCount}, \texttt{sh:class}, \texttt{sh:datatype}, \texttt{sh:nodeKind}, \texttt{sh:pattern}, \texttt{sh:languageIn}, \texttt{sh:closed}, logical combinators, qualified value shapes, property paths). Its primary semantic object is a \emph{conformance} relation between a data graph and a shapes graph, with structured \emph{validation results} for non-conformances \cite{shacl}. \shacl{}-SPARQL allows constraints written as SPARQL queries; \shacl{} Advanced Features adds rules \cite{shaclaf}. \shacl{}'s visible design lineage runs through SPIN \cite{spin}, OSLC Resource Shapes, and Shape Expressions (ShEx) \cite{shex}, not through DL query languages.
+
+\section{Historical priority, done carefully}\label{sec:priority}
+
+\subsection{Three claims, kept separate}
+Following standard practice we separate:
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Prior art:} \nrql{} had a feature before a later language standardized or popularized a similar one.
+  \item \textbf{Conceptual convergence:} two communities independently built similar mechanisms because they faced the same finite-graph constraint problem.
+  \item \textbf{Direct influence:} designers of the later language knew of, cited, or built on \nrql{}.
+\end{enumerate}
+Only the first is strongly supported here; the second is plausible; the third we do not assert.
+
+\subsection{What the idea owes to earlier DL work}
+Intellectual honesty requires noting that \nrql{} did not invent the \emph{idea} of asking a DL knowledge base ``what is known.'' Donini, Lenzerini, Nardi, Nutt and Schaerf formalized an \emph{epistemic operator} $\mathbf{K}$ for description logics in 1998, explicitly to capture queries, procedural rules, and closed-world reasoning over an open-world KB \cite{epistemic}; the minimal-knowledge / \naf{} semantics was further developed in the MKNF line \cite{mknf}. \nrql{}'s contribution is therefore not the concept of autoepistemic querying but its \emph{practical realization}: a high-performance engine in which \naf{}, projection, aggregation, rules, and concrete-domain predicates are available together over real \owl{} data, benchmarked on LUBM \cite{adl04,nrql05}. Read this way, the priority claim becomes both more modest and more defensible.
+
+\subsection{What the dated record supports}
+The \nrql{} idiom that matters is \texttt{NEG} over a projected (or named) query body:
+\begin{lstlisting}[language=nrql,caption={nRQL negated projected query body: an anti-existential subquery.}]
+(retrieve (?x)
+  (neg (project-to (?x)
+         (and (?x c) (?x ?y r) (?y d)))))
+\end{lstlisting}
+\begin{lstlisting}[language=nrql,caption={NAF applied to a defined query body.}]
+(defquery mother-of (?x ?y)
+  (and (?x woman) (?x ?y has-child)))
+(retrieve (?a ?b)
+  (neg (substitute (mother-of ?a ?b))))
+\end{lstlisting}
+These appear in the user's guide \cite[pp.~119--122]{racerug} and the mechanism is described in the dated 2004--2005 publications \cite{adl04,nrql05}. The relevant comparison dates are: RQL, 2002 \cite{rql}; RDQL, W3C Member Submission of 9~January 2004 \cite{rdql}; \nrql{}, ADL'04 (September 2004) and DL~2005 \cite{adl04,nrql05}; EQL-Lite, IJCAI~2007 \cite{eqllite}; SPARQL~1.0, W3C Recommendation 2008 \cite{sparql10}; SPARQL~1.1 (with \texttt{FILTER NOT EXISTS}, \texttt{MINUS}, subqueries), 2013 \cite{sparql}; \shacl{}, 2017 \cite{shacl}.
+
+Against the contemporaries this yields a concrete, checkable contrast rather than a bare assertion of firstness:
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{RQL (2002)} is a declarative, schema-aware \rdf{} query language built around class/property/value navigation; it does not provide a general \naf{}-over-projection (negated subquery) construct for ``no known $r$-successor satisfying $\varphi$.''
+  \item \textbf{RDQL (Jan 2004)} is triple-pattern matching plus filters; its negation is ``safe'' only, i.e.\ restricted to clauses with no variables, which is strictly weaker than a negated projected subquery \cite{rdql}.
+  \item \textbf{SPARQL 1.0 (2008)} could simulate simple \naf{} via \texttt{OPTIONAL} + \texttt{!BOUND}, but lacked the general negation and subquery apparatus; \textbf{SPARQL 1.1 (2013)} standardized it.
+  \item \textbf{EQL-Lite (2007)} is the formal ``effective first-order / epistemic query'' proposal \cite{eqllite}; it \emph{postdates} \nrql{}, so \nrql{} anticipated, in a working engine, the agenda EQL-Lite later formalized.
+\end{itemize}
+
+\noindent The defensible statement is therefore:
+\begin{quote}
+By its 2004--2005 publications, \nrql{} already supported negated projected and negated defined query bodies for \owl{}/DL querying---several years before SPARQL~1.1 standardized \texttt{FILTER NOT EXISTS}, \texttt{MINUS}, and subqueries, and before EQL-Lite formalized effective epistemic FO querying. Among \emph{practically available \owl{} query engines}, \nrql{} is a strong candidate for the first to combine \naf{} with projection. The underlying \emph{idea} of epistemic/closed-world querying over an open-world KB is older still \cite{epistemic,mknf}. We do not claim global firstness over every research prototype, and we do not claim documented influence on later standards.
+\end{quote}
+
+\section{A reduction, with its boundary made explicit}\label{sec:reduction}
+
+The earlier draft stated an ``informal expressivity theorem'' asserting that every nonrecursive \shacl{} Core constraint has an \nrql{} violation query, \emph{assuming} a faithful substrate mirror of all relevant \rdf{} terms and \emph{assuming} property-path closures are materialized. That statement is true but nearly vacuous: it assumes away precisely the two features (\rdf{}-term-nativeness and unbounded paths) later identified as new. We therefore restate it honestly as a reduction whose hypotheses are the contribution.
+
+\begin{lemma}[Reduction modulo mirror, materialization, and a fixed regime]\label{lem:reduction}
+Fix an entailment regime $E$ (e.g.\ ``asserted graph,'' ``RDFS materialization,'' or ``\racer{} DL entailment''). Let $G$ be an \rdf{}/\owl{} graph represented in a \racer{} KB together with a substrate mirror $M(G)$ that exposes, as substrate nodes/edges/labels, every \rdf{} term, triple/role edge, literal value (with datatype and language tag), and term descriptor (IRI vs.\ blank vs.\ literal) that a given shape inspects. Let every property path used be either a bounded path expression or be materialized in $M(G)$ as a finite binary relation. Then for every \emph{nonrecursive} \shacl{} Core shape $S$ there is a hybrid \nrql{} query $Q_S$ that returns exactly the focus/value bindings that $E$-violate $S$.
+\end{lemma}
+
+\begin{proof}[Construction]
+By structural induction on $S$. Targets become the outer domain (\texttt{sh:targetClass C} $\to$ concept atom \texttt{(?x C)} under $E$, or a mirrored \texttt{rdf:type} query; \texttt{sh:targetSubjectsOf}/\texttt{ObjectsOf} $\to$ substrate edge atoms). Bounded paths become joins over role/substrate edges, inverses become inverse roles/edges, alternatives become \texttt{union}. \texttt{sh:minCount 1} $\to$ \texttt{(neg (project-to \dots))}; \texttt{sh:minCount n} $\to$ existence of $n$ pairwise-distinct value variables or a counting aggregate; \texttt{sh:maxCount n} $\to$ existence of $n{+}1$ pairwise-distinct values. Value-class/datatype/node-kind/pattern/enumeration $\to$ concept, concrete-domain/datatype, or substrate label/predicate atoms. \texttt{sh:and}/\texttt{or}/\texttt{not}/\texttt{xone} $\to$ \texttt{and}/\texttt{union}/\texttt{neg} plus counting for exclusive-or. Qualified value shapes $\to$ projected existence/counting over the nested body. \texttt{sh:closed} $\to$ a query for a mirrored outgoing edge whose predicate label is outside the allowed set. Each step preserves ``$E$-violation,'' by the induction hypothesis. \end{proof}
+
+\begin{remark}[The boundary is the content]\label{rem:boundary}
+Lemma~\ref{lem:reduction} certifies that the residual novelty of \shacl{} lives \emph{exactly} in the three hypotheses: (a)~the mirror $M(G)$ must already expose \rdf{}-term structure---otherwise term-native components are out of reach (\S\ref{sec:term}); (b)~unbounded paths must be \emph{materialized}---otherwise they are unreachable in the nonrecursive fragment (\S\ref{sec:paths}); and (c)~the regime $E$ must be \emph{fixed}, because the same surface translation denotes different questions under different regimes (\S\ref{sec:traps}). The lemma is not evidence that \shacl{} added little; it is a map of where it added something.
+\end{remark}
+
+\section{What is genuinely new in SHACL}\label{sec:new}
+
+\subsection{Recursive shape conformance is a new semantic object}\label{sec:recursion}
+The earlier draft filed ``shape conformance versus violation query'' under \emph{soft}, organizational difference. That is right only for the \emph{nonrecursive} fragment, where a shape's satisfaction is captured by a single fixed violation query (Lemma~\ref{lem:reduction}). \shacl{} by design favors shapes that reference other shapes (\texttt{sh:node}, \texttt{sh:property}, qualified value shapes), and such references may form cycles; the W3C specification deliberately leaves the semantics of recursion open \cite{shacl}.
+
+For \emph{recursive} shapes, conformance is not equivalent to any single nonrecursive query. It requires a \emph{model}---a (partial) assignment of shapes and negated shapes to nodes---and the literature offers several inequivalent choices: the supported/partial-assignment semantics of Corman, Reutter and Savkovi\'c \cite{recshacl}, a stable-model semantics \cite{stableshacl}, and a well-founded semantics \cite{wfshacl}. The associated decision problems are genuinely hard: validation under these semantics is NP-complete (and NP-hard in the size of the data graph even for a fragment with stratified negation) \cite{recshacl}, and satisfiability and containment of recursive \shacl{} are undecidable for the full language \cite{satcont}. None of this collapses to ``a violation query whose answer set should be empty.''
+
+This is the first genuine conceptual addition, and it is a logic-level one: \shacl{}'s conformance relation is a recursively defined, possibly non-stratified, fixpoint object. \nrql{}'s nearest analogue is its stratified \naf{}-with-rules layer, but \nrql{}'s primary semantic object remains an \emph{answer set} for a (compositional, nonrecursive-in-the-body) query, not a global conformance assignment over mutually referential shapes.
+
+\subsection{Unbounded regular paths are provably out of the nonrecursive fragment}\label{sec:paths}
+Bounded paths (sequence, inverse, alternative, fixed-length repetition) reduce to \nrql{} joins, inverse roles, and unions (Lemma~\ref{lem:reduction}). The hard case is \texttt{sh:zeroOrMorePath} / \texttt{sh:oneOrMorePath} over an \emph{a priori unrestricted} predicate in the raw graph:
+\begin{lstlisting}[language=turtle]
+[ sh:path [ sh:zeroOrMorePath ex:broader ] ; sh:minCount 1 ]
+\end{lstlisting}
+This is a regular-path (reachability) query, and it is not expressible by the nonrecursive \naf{}-plus-projection fragment.
+
+\begin{proposition}[Unbounded paths exceed nonrecursive \nrql{}]\label{prop:paths}
+Let $\mathcal{Q}$ be the class of \nrql{} queries built from positive atoms, \texttt{and}, \texttt{union}, \texttt{project-to}, and \texttt{neg} (\naf{}), \emph{without} recursive rules and \emph{without} relying on a transitivity declaration for the target predicate. There is no $Q\in\mathcal{Q}$ that, for every finite edge-labeled graph, returns exactly the pairs $(x,y)$ connected by an $r$-path of arbitrary length.
+\end{proposition}
+
+\begin{proof}[Justification]
+Queries in $\mathcal{Q}$ are evaluated within (a fragment of) relational algebra / first-order logic over the active domain of known objects. Transitive closure---equivalently, $s$--$t$ reachability over a binary relation---is not first-order definable on finite structures \cite{ahoullman,libkin}. Hence no fixed $Q\in\mathcal{Q}$ computes arbitrary-length $r$-reachability uniformly over all finite graphs. \end{proof}
+
+\noindent \nrql{} recovers the behaviour only by leaving $\mathcal{Q}$: (i)~declaring $r$ a transitive role in the \tbox{} (so DL entailment supplies the closure for positive atoms); (ii)~a recursive rule / fixpoint that materializes the closure into the \abox{} or substrate; or (iii)~precomputing the closure into $M(G)$. What \shacl{} adds is \emph{native} regular-path validation over the raw graph, independent of any \owl{} role declaration. This is the firmest hard gap in the whole comparison, and Proposition~\ref{prop:paths} is why.
+
+\subsection{RDF terms as the primitive validation universe (conditional)}\label{sec:term}
+\shacl{} validates \rdf{} graphs directly: IRIs, blank nodes, literals, datatype IRIs, language tags, and triples are primitive. \nrql{}'s \abox{} variables range over named individuals; substrate variables range over substrate nodes. The mirror closes much of this gap for \owl{} KBs, and a hand-built substrate can close more. The residual, genuinely term-level cases---native in \shacl{}, available in \nrql{} only if mirrored---include: blank-node-vs-IRI discrimination; exact literal lexical form; language tags as such (not merely the string); \texttt{sh:uniqueLang}; and syntactic features of \rdf{} collections or reification. If those features are encoded as substrate labels, \nrql{} can query them; if not, \shacl{} sees them and \nrql{} does not. This is therefore a \emph{conditional} novelty.
+
+\subsection{SHACL-SPARQL imports SPARQL algebra and term functions (conditional)}
+\shacl{}-SPARQL admits validators written as SPARQL queries; to the extent they rely on SPARQL-specific algebra (property paths, \texttt{MINUS}, \texttt{VALUES}, \texttt{BIND}) or term functions (\texttt{isBlank}, \texttt{isLiteral}, \texttt{datatype}, \texttt{lang}), they exceed native \nrql{} syntax. But the common case---joins, filters, projection, \texttt{FILTER NOT EXISTS}---maps onto \nrql{} conjunction, substrate predicates, projection, and \naf{}. The gap is SPARQL's particular \rdf{} algebra/function vocabulary, not ``constraints versus no constraints.''
+
+\subsection{Validation reports (organizational)}
+\shacl{} makes diagnostics part of the model: validation results carry focus node, value node, result path, message, severity, and source shape \cite{shacl}. \nrql{} returns answer tuples or rule consequences; a wrapper can render reports, but the report vocabulary is not part of \nrql{}. Because standards/tooling are out of scope, this is an organizational rather than expressivity difference---but it is a real conceptual choice.
+
+\section{Three semantic traps in the naive translation}\label{sec:traps}
+
+The translation table (\S\ref{sec:table}) is sound only once three pitfalls are controlled. These are where ``\nrql{} can express it'' most often goes subtly wrong, and the earlier draft underweighted them.
+
+\subsection{Epistemic-mode mismatch}
+The single most important caveat: \texttt{(neg (?v C))} means ``$C(v)$ is \emph{not entailed} by the KB,'' which is \emph{neither} ``$C(v)$ is false'' (classical negation) \emph{nor} ``the type triple is absent from the graph'' (raw-graph membership). \shacl{} over a materialized graph asks the last of these. Positive \nrql{} atoms are open-world and entailment-aware; \texttt{neg} is closed-world over the active domain. So the clean-looking row \texttt{sh:class C} $\to$ \texttt{(neg (?v C))} denotes three different questions depending on the regime $E$. Any honest translation must fix $E$ first (Remark~\ref{rem:boundary}); the row belongs next to that warning, not in isolation.
+
+\subsection{Cardinality without a unique-name assumption}
+\shacl{} counts \emph{distinct \rdf{} terms}---a syntactic notion. \owl{} makes no unique-name assumption: two named individuals may be \emph{inferred equal} (\texttt{owl:sameAs}) or \emph{required distinct} (\texttt{owl:differentFrom}). So ``$n{+}1$ pairwise-distinct value variables'' for \texttt{sh:maxCount n} requires explicit inequality / injective bindings, and even then it counts \emph{known individuals under the chosen equality theory}, not \rdf{} terms. Under \texttt{sh:sameAs}-rich data the two counts can diverge. Cardinality is thus one of the \emph{lossy} translations, not a clean one.
+
+\subsection{Active domain versus anonymous witnesses}
+\nrql{} variables range over named \abox{} individuals (or mirrored substrate nodes), not over arbitrary model elements. An \owl{} existential may entail an \emph{anonymous} filler that is no graph term and no named individual; such a witness cannot be bound. This is exactly why \texttt{has-known-successor} exists: it asks for a \emph{known} successor, not a merely entailed one \cite[pp.~115--116]{racerug}. \shacl{} likewise validates graph terms, so the two often agree---but for different reasons, and they diverge when one validates an entailed graph in which existentials have introduced fresh blank nodes.
+
+\section{Translation patterns (sound under \S\ref{sec:traps})}\label{sec:table}
+
+Table~\ref{tab:translation} restates the core correspondences, now read \emph{only} subject to a fixed regime $E$ and the caveats above. It is not a claim of syntactic completeness for every corner case; it shows that the constraint \emph{pattern} was semantically available.
+
+\begin{longtable}{p{0.24\linewidth}p{0.33\linewidth}p{0.34\linewidth}}
+\caption{SHACL Core patterns and nRQL counterparts, modulo a fixed entailment regime.}\label{tab:translation}\\
+\toprule
+\textbf{SHACL pattern} & \textbf{Semantic reading} & \textbf{nRQL/Racer counterpart} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{SHACL pattern} & \textbf{Semantic reading} & \textbf{nRQL/Racer counterpart} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{sh:targetClass C} & Validate nodes of class $C$. & \texttt{(?x C)} under $E$, or mirrored \texttt{rdf:type} query. \\
+\addlinespace
+\texttt{sh:minCount 1} & At least one value on the path. & \texttt{(neg (project-to (?x) path))}; the manual's missing-known-successor idiom. \\
+\addlinespace
+\texttt{sh:minCount n} & At least $n$ distinct values. & $n$ pairwise-distinct value variables, or counting aggregate. \emph{See \S\ref{sec:traps}.2.} \\
+\addlinespace
+\texttt{sh:maxCount n} & At most $n$ distinct values. & Violation: $n{+}1$ pairwise-distinct values; injective bindings / inequality. \emph{Lossy without UNA.} \\
+\addlinespace
+\texttt{sh:class C} & Each value conforms to $C$. & Violation: value $v$ with \texttt{(neg (?v C))}. \emph{Meaning depends on $E$; see \S\ref{sec:traps}.1.} \\
+\addlinespace
+\texttt{sh:datatype d} & Value is a literal of datatype $d$. & Concrete-domain/datatype atoms, or mirrored literal markers. \\
+\addlinespace
+\texttt{sh:nodeKind} & IRI/blank/literal term-kind. & Substrate term-kind labels if mirrored; not an \owl{} fact. \\
+\addlinespace
+\texttt{sh:pattern} & Lexical regex check. & Substrate string predicates (manual shows substring search). \\
+\addlinespace
+\texttt{sh:languageIn}, \texttt{sh:uniqueLang} & Language-tag constraints. & Only if language tags are mirrored as data; otherwise native to \shacl{}. \\
+\addlinespace
+\texttt{sh:hasValue}, \texttt{sh:in} & Required/enumerated values. & Equality/\texttt{same-as} or substrate literal equality; \naf{} for absence. \\
+\addlinespace
+\texttt{sh:equals}, \texttt{sh:disjoint} & Compare value sets of two paths. & Difference via projection + \naf{}; disjointness as a shared value. \\
+\addlinespace
+\texttt{sh:lessThan(OrEquals)} & Cross-property comparison. & Concrete-domain/substrate binary numeric/string predicates. \\
+\addlinespace
+\texttt{sh:qualifiedMin/MaxCount} & Count values meeting a nested shape. & Project/count over the nested body; \texttt{NEG} for missing qualified values. \\
+\addlinespace
+\texttt{sh:and/or/not/xone} & Boolean shape combinators. & \texttt{and}/\texttt{union}/\texttt{neg}; xor via counting satisfied alternatives. \\
+\addlinespace
+\texttt{sh:closed true} & No outgoing properties except allowed. & Query a mirrored outgoing edge whose predicate label is not allowed; needs predicate labels in the substrate. \\
+\addlinespace
+Bounded \texttt{sh:path} (seq/inv/alt) & Navigate finite graph paths. & Joins with intermediate variables; inverse roles/edges; \texttt{union}. \\
+\addlinespace
+\texttt{sh:zero/oneOrMorePath} & Unbounded reachability. & \textbf{Out of the nonrecursive fragment (Prop.~\ref{prop:paths}).} Only via transitive role, recursive rule closure, or materialization. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Annotation and ontology-metadata governance}
+Because of the mirror, an \shacl{}-SPARQL shape requiring annotations on subclass axioms has a hybrid \nrql{} analogue once axiom nodes, sources, targets, properties, and annotations are mirrored:
+\begin{lstlisting}[language=nrql,caption={Schematic nRQL version over a mirrored OWL substrate (marker names depend on the encoding).}]
+(retrieve (?*ax ?*x ?*y)
+  (and (?*ax ?*x (:owl-annotated-source))
+       (?*ax *rdfs:subClassOf (:owl-annotated-property))
+       (?*ax ?*y (:owl-annotated-target))
+       (neg
+         (project-to (?*ax)
+           (and (?*ax ?*p (:owl-annotation-relationship))
+                (?*p RequiredAnnotationKind))))))
+\end{lstlisting}
+This is the point that most often surprises modern readers: ontology-metadata validation was \emph{not} uniquely enabled by \shacl{} \cite[pp.~141--143]{racerug}.
+
+\section{Where nRQL was stronger than SHACL Core}\label{sec:stronger}
+
+The comparison is not one-directional. For \owl{}-aware constraints \nrql{} was often the more powerful instrument:
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Native DL reasoning inside constraints.} Positive atoms exploit entailed class/role membership; a single query can mix entailment, classical negation, \naf{}, substrate model-checking, and concrete-domain predicates. \shacl{} Core validates a graph and pushes entailment outside the shape language, into a preprocessing/regime choice \cite{shacl}.
+  \item \textbf{Hybrid semantic atoms.} \abox{} and substrate variables bind in parallel, integrating \owl{} conditions with graph/data predicates in one query \cite[pp.~135--137]{racerug}---tighter than \shacl{} Core's separation of validation and reasoning.
+  \item \textbf{Non-monotonic update rules.} \nrql{} rules have query-body antecedents and generalized \abox{} consequents, can create individuals, and are non-monotonic via \naf{} \cite[pp.~125--127]{racerug}; the reference manual confirms \texttt{firerule} as the rule analogue of \texttt{retrieve} \cite[pp.~160--161]{racerrm}. \shacl{} Core has no update semantics; \shacl{} Advanced Features adds rules later \cite{shaclaf}.
+\end{itemize}
+
+\section{A scoped headline, with no fabricated percentage}\label{sec:headline}
+
+The earlier draft summarized the result as ``$\approx 80\%$.'' We withdraw the number. It was disclaimed repeatedly in that draft, which is itself a sign that it carried rhetorical weight it could not support, and in an archival or priority context it is the first detail a skeptical reader would attack. The defensible statement is qualitative:
+
+\begin{quote}
+For the recurring family of \emph{OWL-centric, finite, closed-world} integrity checks---required properties, cardinalities, qualified value constraints, type/datatype/string checks, disjointness/equality, annotation and ontology-metadata governance, and absence-of-counterexample constraints---\emph{and modulo a fixed entailment regime}, \nrql{} plus the mirror substrate was already expressively adequate by 2005. The residual is concentrated in recursive shape conformance (\S\ref{sec:recursion}), native unbounded paths (\S\ref{sec:paths}), \rdf{}-term primitives (\S\ref{sec:term}), and the standardized conformance/report model.
+\end{quote}
+
+A genuine quantitative figure would require coding a corpus---e.g.\ the \shacl{} test suite, or a sample of published shapes graphs---against Table~\ref{tab:translation} under an explicit regime, and reporting inter-coder agreement. We mark that as the right future-work experiment and decline to pre-empt its result with a guess.
+
+\section{A claim we decline: property graphs}\label{sec:declined}
+
+The earlier draft argued that \racer{}'s substrate ``anticipated'' property graphs and was relevant to Cypher's lineage. We withdraw this as unsupported and as a distraction from the strong \shacl{}-specific argument. A labeled directed graph with predicates is not distinctive: \rdf{} itself, semantic networks, and the attributed/labeled graph models surveyed by Angles and Gutierrez long predate the term \cite{angles2008}. Moreover the substrate differs from modern property graphs precisely where it would matter---modern property graphs treat \emph{edges} as first-class entities with their own property maps, which the substrate does not. Cypher and its relatives emerged from graph-database and application needs \cite{cypher2018}, with no documented debt to \nrql{}. We therefore make \emph{no} property-graph priority claim; the substrate's relevance here is solely that it makes \owl{} metadata and \rdf{}-term structure queryable, which is what the \shacl{} comparison needs.
+
+\section{Answer to the main question}\label{sec:answer}
+
+\begin{quote}
+\textbf{\shacl{} did not introduce the ability to express closed-world integrity constraints over \owl{} data, required-property and qualified-cardinality constraints, annotation-governance constraints, or most datatype/string checks. Those were already expressible in \nrql{} via \naf{}, projection, rules, concrete-domain/datatype predicates, and the mirror/substrate layer \cite{adl04,nrql05,racerug}, and the underlying epistemic-query idea is older still \cite{epistemic,mknf}.}
+\end{quote}
+
+\noindent What \shacl{} did add, in decreasing order of how ``hard'' the novelty is:
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Recursive shape conformance} as a first-class, possibly non-stratified fixpoint semantics, with NP-hard validation and undecidable satisfiability/containment in general \cite{recshacl,stableshacl,satcont}. This does not reduce to a single nonrecursive violation query.
+  \item \textbf{Native unbounded regular paths}, provably outside the nonrecursive \naf{}-plus-projection fragment (Prop.~\ref{prop:paths}; \cite{ahoullman,libkin}).
+  \item \textbf{An \rdf{}-term-native validation universe} (node kind, lexical form, language tags), conditional on what a \nrql{} substrate mirrors (\S\ref{sec:term}).
+  \item \textbf{SPARQL algebra/term functions} when \shacl{}-SPARQL is used---conditional, since the common fragment still maps to hybrid \nrql{}.
+  \item \textbf{A standardized conformance/validation-report model}---an organizational rather than expressivity gain.
+\end{enumerate}
+
+\noindent What was \emph{not} new: negated subqueries and universal closed-world queries, which \nrql{} realized via \texttt{NEG} over \texttt{PROJECT-TO} years before SPARQL~1.1 standardized them.
+
+\section{Conclusion}\label{sec:conclusion}
+
+A historically fair account should not say that \shacl{} was the first practical way to impose closed-world constraints on \owl{} data, nor that SPARQL~1.1 first made negated-subquery universal checks possible. \nrql{} supplied the essential mechanisms---\naf{}, projection, entailment-aware atoms, rules, concrete-domain predicates, aggregation, complex \tbox{} queries, and a hybrid substrate---and the mirror data substrate made \owl{} annotations and told values queryable, dissolving the false ``domain \abox{} versus ontology metadata'' boundary. \nrql{} deserves explicit recognition as prior art for negated projected subqueries in a practical \owl{} query engine, predating SPARQL~1.1 \cite{adl04,nrql05}.
+
+The central difference is orientation. \nrql{} is a reasoner-integrated query-and-rule language that \emph{can be used to} validate, whose primary object is an answer set. \shacl{} is a validation language whose primary object is a conformance relation between data and shapes. That orientation buys \shacl{} two things that are not mere repackaging---recursive conformance semantics and native regular-path validation---plus \rdf{}-term primitives and a report model. It does not buy it the closed-world constraint idea, which the description-logic tradition and \nrql{} already had. What remains genuinely open, in both directions, is \emph{influence}: the conceptual debt is clear at the level of prior art and anticipation, but no citation trail establishes that SPARQL~1.1, \shacl{}, or Cypher built directly on \nrql{}.
+
+\appendix
+\section{Manual evidence, summarized}\label{sec:appendix}
+The source points from the uploaded manuals most relevant to the comparison:
+\begin{enumerate}[leftmargin=2em]
+  \item \nrql{} described historically as an expressive DL query language with conjunctive queries, variables over named objects, \naf{}, projection, group-by, aggregation \cite[p.~4]{racerug}.
+  \item Feature summary: atoms combine with \texttt{and}/\texttt{union}/\texttt{neg}/\texttt{project-to}; positive variables bind by entailment; \naf{} and classical negation; concrete-domain and datatype/annotation retrieval; projection and aggregation; hybrid substrate queries; the autoepistemic characterization \cite[pp.~81--84]{racerug}.
+  \item \naf{} section: classical negation vs.\ \naf{}; missing-known-child idiom with \texttt{project-to} and \texttt{has-known-successor} \cite[pp.~113--120]{racerug}.
+  \item Rules: query-body antecedents, generalized \abox{} consequents, individual creation, non-monotonicity \cite[pp.~125--127]{racerug}; \texttt{firerule} as the analogue of \texttt{retrieve} \cite[pp.~160--161]{racerrm}.
+  \item Substrate: node/edge-labeled directed graph associated with an \abox{}; hybrid queries over both \cite[pp.~133--137]{racerug}.
+  \item Mirror data substrate: substrate objects for \abox{} and \owl{} elements; \owl{} annotation/datatype markers; annotation/told values queryable as substrate nodes \cite[pp.~137--143]{racerug}.
+  \item \texttt{NEG} over \texttt{project-to} and over defined queries: the negated-subquery idiom for closed-world universal constraints \cite[pp.~119--122]{racerug}.
+\end{enumerate}
+
+\begin{thebibliography}{99}
+
+\bibitem{racerug}
+Racer Systems GmbH \& Co.\ KG. \emph{RacerPro User's Guide Version 2.0}. October 24, 2012.
+
+\bibitem{racerrm}
+Racer Systems GmbH \& Co.\ KG. \emph{RacerPro Reference Manual Version 1.9}. October 12, 2010.
+
+\bibitem{adl04}
+Volker Haarslev, Ralf M\"oller, and Michael Wessel. Querying the Semantic Web with Racer~+~\nrql{}. In \emph{Proc.\ KI-2004 International Workshop on Applications of Description Logics (ADL'04)}, Ulm, Germany, September 2004.
+
+\bibitem{nrql05}
+Michael Wessel and Ralf M\"oller. A High Performance Semantic Web Query Answering Engine. In \emph{Proc.\ 2005 International Workshop on Description Logics (DL~2005)}, CEUR-WS Vol.~147, 2005.
+
+\bibitem{epistemic}
+Francesco M. Donini, Maurizio Lenzerini, Daniele Nardi, Werner Nutt, and Andrea Schaerf. An Epistemic Operator for Description Logics. \emph{Artificial Intelligence}, 100(1--2):225--274, 1998.
+
+\bibitem{mknf}
+Francesco M. Donini, Daniele Nardi, and Riccardo Rosati. Description Logics of Minimal Knowledge and Negation as Failure. \emph{ACM Transactions on Computational Logic}, 3(2):177--225, 2002.
+
+\bibitem{eqllite}
+Diego Calvanese, Giuseppe De Giacomo, Domenico Lembo, Maurizio Lenzerini, and Riccardo Rosati. EQL-Lite: Effective First-Order Query Processing in Description Logics. In \emph{Proc.\ 20th International Joint Conference on Artificial Intelligence (IJCAI 2007)}, pages 274--279, 2007.
+
+\bibitem{rql}
+Gregory Karvounarakis, Sofia Alexaki, Vassilis Christophides, Dimitris Plexousakis, and Michel Scholl. RQL: A Declarative Query Language for RDF. In \emph{Proc.\ 11th International World Wide Web Conference (WWW 2002)}, pages 592--603, 2002.
+
+\bibitem{rdql}
+Andy Seaborne. \emph{RDQL --- A Query Language for RDF}. W3C Member Submission, 9 January 2004. \url{https://www.w3.org/submissions/2004/SUBM-RDQL-20040109/}.
+
+\bibitem{sparql10}
+Eric Prud'hommeaux and Andy Seaborne, editors. \emph{SPARQL Query Language for RDF}. W3C Recommendation, 15 January 2008. \url{https://www.w3.org/TR/rdf-sparql-query/}.
+
+\bibitem{sparql}
+Steve Harris and Andy Seaborne, editors. \emph{SPARQL 1.1 Query Language}. W3C Recommendation, 21 March 2013. \url{https://www.w3.org/TR/sparql11-query/}.
+
+\bibitem{shacl}
+Holger Knublauch and Dimitris Kontokostas, editors. \emph{Shapes Constraint Language (SHACL)}. W3C Recommendation, 20 July 2017. \url{https://www.w3.org/TR/shacl/}.
+
+\bibitem{shaclaf}
+Holger Knublauch, Dimitris Kontokostas, et al. \emph{SHACL Advanced Features}. W3C Working Group Note, 8 June 2017. \url{https://www.w3.org/TR/shacl-af/}.
+
+\bibitem{shex}
+Eric Prud'hommeaux, Jose Emilio Labra Gayo, and Harold Solbrig. Shape Expressions: An RDF Validation and Transformation Language. In \emph{Proc.\ 10th International Conference on Semantic Systems (SEMANTICS 2014)}, pages 32--40, 2014.
+
+\bibitem{spin}
+Holger Knublauch. \emph{SPIN --- Modeling Vocabulary}. W3C Member Submission, 22 February 2011. \url{https://www.w3.org/Submission/spin-modeling/}.
+
+\bibitem{recshacl}
+Julien Corman, Juan L. Reutter, and Ognjen Savkovi\'c. Semantics and Validation of Recursive SHACL. In \emph{Proc.\ 17th International Semantic Web Conference (ISWC 2018)}, LNCS 11136, pages 318--336, 2018.
+
+\bibitem{stableshacl}
+Medina Andre\c{s}el, Julien Corman, Magdalena Ortiz, Juan L. Reutter, Ognjen Savkovi\'c, and Mantas \v{S}imkus. Stable Model Semantics for Recursive SHACL. In \emph{Proc.\ The Web Conference 2020 (WWW 2020)}, pages 1570--1580, 2020.
+
+\bibitem{wfshacl}
+Cem Okulmus et al. SHACL Validation under the Well-founded Semantics. In \emph{Proc.\ 21st International Conference on Principles of Knowledge Representation and Reasoning (KR 2024)}, 2024.
+
+\bibitem{satcont}
+Paolo Pareti, George Konstantinidis, Fabio Mogavero, and Timothy J. Norman. SHACL Satisfiability and Containment. In \emph{Proc.\ 19th International Semantic Web Conference (ISWC 2020)}, LNCS 12506, pages 474--493, 2020.
+
+\bibitem{ahoullman}
+Alfred V. Aho and Jeffrey D. Ullman. Universality of Data Retrieval Languages. In \emph{Proc.\ 6th ACM Symposium on Principles of Programming Languages (POPL 1979)}, pages 110--119, 1979.
+
+\bibitem{libkin}
+Leonid Libkin. \emph{Elements of Finite Model Theory}. Springer, 2004.
+
+\bibitem{angles2008}
+Renzo Angles and Claudio Gutierrez. Survey of Graph Database Models. \emph{ACM Computing Surveys}, 40(1), Article~1, 2008.
+
+\bibitem{cypher2018}
+Nadime Francis, Alastair Green, Paolo Guagliardo, Leonid Libkin, Tobias Lindaaker, Victor Marsault, Stefan Plantikow, Mats Rydberg, Petra Selmer, and Andr\'es Taylor. Cypher: An Evolving Query Language for Property Graphs. In \emph{Proc.\ 2018 International Conference on Management of Data (SIGMOD 2018)}, pages 1433--1445, 2018.
+
+\end{thebibliography}
+
+\end{document}

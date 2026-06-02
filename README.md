@@ -55,10 +55,22 @@ original in four ways:
    undecidable satisfiability/containment) and unbounded regular paths (provably
    outside the nonrecursive NAF+projection fragment, since transitive closure is
    not first-order definable).
-4. **Honest calibration:** the unsupported "80%" figure and the property-graph
-   priority claim are withdrawn; a new section covers three translation traps
-   (epistemic-mode mismatch, counting without a unique-name assumption, and the
+4. **Honest calibration:** the unsupported "80%" figure is withdrawn (replaced by
+   a measured band); a new section covers three translation traps (epistemic-mode
+   mismatch, counting without a unique-name assumption, and the
    active-domain-vs-anonymous-witness gap).
+
+The revised edition also **corrects** an earlier wrong call on property graphs.
+The RacerPro **data substrate** is a genuine property graph — `data-node` /
+`data-edge` give *both* nodes and edges first-class, queryable key-value property
+maps (see `pgraph-example.jpeg`, a live RacerPro 2.0 session modeling bank
+accounts and a `deposit` edge with `:amount`/`:currency`, queried by nRQL on edge
+properties). Distinctively, it is a property graph *coupled to a DL reasoner*
+(node types = OWL concepts, edge labels = roles with inverses). Calibrated
+verdict: real, early (2005), reasoning-coupled prior art — but **not** the first
+attributed-graph model (those go back to Kuper–Vardi 1984, GOOD/hypernode 1990,
+Güting's GraphDB 1994) and with **no** documented influence on Neo4j/Cypher/GQL.
+Convergent evolution, not lineage. See the paper's §11.
 
 ## Empirical result
 

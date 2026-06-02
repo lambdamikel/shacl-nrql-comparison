@@ -8,6 +8,7 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs,longtable,array}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \usepackage{listings}
 \usepackage{enumitem}
 \usepackage{hyperref}
@@ -98,7 +99,7 @@ This report re-examines a specific historical-semantic question: what did \shacl
 
 Second, it replaces the earlier ``informal expressivity theorem''---which assumed away exactly the hard cases---with an explicit \emph{reduction lemma} whose stated assumptions mark the true boundary of the comparison. Third, it sharpens what is genuinely new in \shacl{} to two items with rigorous backing rather than one: (i)~a \emph{recursive} shape-conformance relation, whose semantics is a nontrivial object (partial / stable / well-founded assignments) and whose associated decision problems can be NP-hard or undecidable \cite{recshacl,stableshacl,satcont}; and (ii)~\emph{unbounded regular property paths}, which are provably beyond the nonrecursive \naf{}-plus-projection fragment because transitive closure is not first-order definable \cite{ahoullman,libkin}. \rdf{}-term-native components (node kind, language tags, lexical form) and \shacl{}'s validation-report vocabulary are conditional or organizational differences. Fourth, it adds a section on three \emph{semantic traps} in the naive translation---epistemic-mode mismatch, cardinality counting without a unique-name assumption, and the active-domain-versus-anonymous-witness gap---that the earlier draft underweighted.
 
-The net conclusion is unchanged in spirit but more precise: the large majority of recurring \emph{OWL-centric, finite, closed-world} integrity checks that \shacl{} is used for were already within reach of \nrql{} plus the mirror substrate by 2005, and \nrql{} deserves explicit recognition as prior art for negated projected subqueries in a practical \owl{} query engine. In place of the earlier draft's bare ``$80\%$'' we report an empirical \emph{band} from coding the W3C \shacl{} test suite (\S\ref{sec:empirical}): \textbf{73--84\%} of \shacl{} Core constraint features have a direct \nrql{} counterpart ($\approx\!92\%$ once the substrate mirror is granted), while the \emph{provably} native residual is only $\approx\!5\%$ (unbounded/recursive paths, matching Proposition~\ref{prop:paths}), rising to a best estimate of $\approx\!8\%$ once \texttt{sh:pattern} regular expressions are counted---which RacerPro cannot express \emph{declaratively}. These are residuals of the declarative fragment only: \nrql{}'s lambda/\texttt{:reject} escape hatch is Turing-complete with knowledge-base callback (the analogue of \shacl{}-SPARQL and \shacl{}-JS), so at the escape-hatch tier the \shacl{}-Core expressivity residual collapses and the comparison turns on declarativity rather than power. We also decline the earlier draft's property-graph priority claim as unsupported. The residual novelty of \shacl{} is concentrated, precisely, in recursive shape conformance, native regular-path validation, \rdf{}-term primitives, and the standardized conformance/report model.
+The net conclusion is unchanged in spirit but more precise: the large majority of recurring \emph{OWL-centric, finite, closed-world} integrity checks that \shacl{} is used for were already within reach of \nrql{} plus the mirror substrate by 2005, and \nrql{} deserves explicit recognition as prior art for negated projected subqueries in a practical \owl{} query engine. In place of the earlier draft's bare ``$80\%$'' we report an empirical \emph{band} from coding the W3C \shacl{} test suite (\S\ref{sec:empirical}): \textbf{73--84\%} of \shacl{} Core constraint features have a direct \nrql{} counterpart ($\approx\!92\%$ once the substrate mirror is granted), while the \emph{provably} native residual is only $\approx\!5\%$ (unbounded/recursive paths, matching Proposition~\ref{prop:paths}), rising to a best estimate of $\approx\!8\%$ once \texttt{sh:pattern} regular expressions are counted---which RacerPro cannot express \emph{declaratively}. These are residuals of the declarative fragment only: \nrql{}'s lambda/\texttt{:reject} escape hatch is Turing-complete with knowledge-base callback (the analogue of \shacl{}-SPARQL and \shacl{}-JS), so at the escape-hatch tier the \shacl{}-Core expressivity residual collapses and the comparison turns on declarativity rather than power. We also \emph{correct} the earlier draft's property-graph stance (\S\ref{sec:declined}): the data substrate is a genuine, reasoning-coupled property graph with first-class, queryable edge property maps---real prior art for property-graph modeling fused with DL reasoning---though the attributed-graph model class predates it (1984--1994) and we find no documented influence on later property-graph languages. The residual novelty of \shacl{} is concentrated, precisely, in recursive shape conformance, native regular-path validation, \rdf{}-term primitives, and the standardized conformance/report model.
 \end{abstract}
 
 \section*{Generative AI authorship and independence declaration}\label{sec:ai-declaration}
@@ -122,7 +123,7 @@ This revision differs from the earlier draft in four substantive ways, each just
   \item \textbf{Priority is grounded in the literature, not the manual alone} (\S\ref{sec:priority}). The manual's self-description (``the only practically available \owl{} query language of its time'' for autoepistemic queries \cite[p.~82]{racerug}) is a vendor claim. We keep it, but we anchor the substantive priority claim in dated, independent publications and name the contemporaries it is implicitly measured against.
   \item \textbf{The ``informal theorem'' becomes an explicit reduction} (\S\ref{sec:reduction}) whose assumptions are the point.
   \item \textbf{Two genuine novelties, with proofs/citations, not one} (\S\ref{sec:new}): recursive shape conformance and unbounded regular paths.
-  \item \textbf{A new section on translation traps} (\S\ref{sec:traps}) and \textbf{withdrawal of the ``80\%'' figure and the property-graph priority claim} (\S\ref{sec:headline}, \S\ref{sec:declined}).
+  \item \textbf{A new section on translation traps} (\S\ref{sec:traps}), \textbf{withdrawal of the ``80\%'' figure} (\S\ref{sec:headline}), and a \textbf{corrected, evidence-based property-graph assessment} (\S\ref{sec:declined}).
 \end{enumerate}
 
 Throughout, ``possible with \nrql{}'' is read generously, matching the system the manuals describe: \abox{} queries with classical negation, \naf{}, projection, union, and conjunction; DL-aware atoms evaluated by entailment; rules with query-body antecedents and generalized \abox{} consequents; concrete-domain/datatype predicates; group-by and aggregation; complex \tbox{} queries; hybrid \abox{}-plus-substrate queries; and the mirror data substrate for \owl{} documents, annotations, and told datatype/annotation values \cite[pp.~4,\,81--84,\,113--143]{racerug}. On the \shacl{} side we distinguish \shacl{} Core, \shacl{}-SPARQL, and \shacl{} Advanced Features \cite{shacl,shaclaf}.
@@ -393,9 +394,36 @@ with a best single estimate of $N \approx 8\%$ (paths plus \texttt{sh:pattern} r
   \item \textbf{Single automated coder.} One coding scheme was applied; no second coder or inter-rater agreement was computed. The per-file CSV is published so the coding can be audited.
 \end{enumerate}
 
-\section{A claim we decline: property graphs}\label{sec:declined}
+\section{Property graphs: a correction}\label{sec:declined}
 
-The earlier draft argued that \racer{}'s substrate ``anticipated'' property graphs and was relevant to Cypher's lineage. We withdraw this as unsupported and as a distraction from the strong \shacl{}-specific argument. A labeled directed graph with predicates is not distinctive: \rdf{} itself, semantic networks, and the attributed/labeled graph models surveyed by Angles and Gutierrez long predate the term \cite{angles2008}. Moreover the substrate differs from modern property graphs precisely where it would matter---modern property graphs treat \emph{edges} as first-class entities with their own property maps, which the substrate does not. Cypher and its relatives emerged from graph-database and application needs \cite{cypher2018}, with no documented debt to \nrql{}. We therefore make \emph{no} property-graph priority claim; the substrate's relevance here is solely that it makes \owl{} metadata and \rdf{}-term structure queryable, which is what the \shacl{} comparison needs.
+An earlier version of this report declined the property-graph comparison on the ground that ``the substrate differs from modern property graphs \dots\ modern property graphs treat edges as first-class entities with their own property maps, which the substrate does not.'' \emph{That was factually wrong}, and we correct it here. The \racer{} data substrate creates nodes \emph{and} edges with the \texttt{data-node}/\texttt{data-edge} macros, each carrying a structured, queryable label, retrieved by \texttt{node-label}/\texttt{edge-label} \cite[pp.~137--139]{racerug}. Edge labels are first-class key--value property maps, exactly as in a property graph.
+
+Figure~\ref{fig:pg} (a live \racer{}~2.0 session) makes this concrete. A financial-transaction graph is built with accounts as nodes carrying \texttt{:amount}, \texttt{:currency}, and \texttt{:number} properties, and a \texttt{deposit} edge carrying its own \texttt{:amount} and \texttt{:currency}:
+\begin{lstlisting}[language=nrql]
+(data-node acc1 ((:amount 1000.00) (:currency $) (:number 10039)) account)
+(data-node acc2 ((:amount 19000.00) (:currency $) (:number 2090)) account)
+(data-edge acc1 acc2 ((:amount 9900.00) (:currency $)) deposit)
+\end{lstlisting}
+and queried with \nrql{} predicates over node \emph{and} edge properties---``\$ accounts with balance ${>}10000$ that received a withdrawal of ${>}5000$'', where the amount bound is a predicate on the edge's property map:
+\begin{lstlisting}[language=nrql]
+(retrieve (?x ?y)
+  (and (?x account)
+       (?*x ((:currency $) (:amount (:predicate (> 10000)))))
+       (?x ?y withdrawal)
+       (?*y ?*x ((:currency $) (:amount (:predicate (> 5000)))))))
+\end{lstlisting}
+
+\begin{figure}[ht]\centering
+  \includegraphics[width=0.9\linewidth]{pgraph-example.jpeg}
+  \caption{A property graph built and queried in \racer{}~2.0 (RacerPorter). Nodes \texttt{acc1}--\texttt{acc3} and the \texttt{deposit} edge carry key--value property maps; \nrql{} filters on node \emph{and} edge properties and traverses the \texttt{deposit}/\texttt{withdrawal} (inverse) edge, while node types (\texttt{account}) are \owl{}/DL concepts and edge labels are DL roles.}\label{fig:pg}
+\end{figure}
+
+Two things are notable. First, this is a bona fide property graph---typed nodes and typed directed edges, both with key--value property maps, queried directly---and it predates the \emph{term} ``property graph.'' Second, and more distinctively, it is a property graph \emph{loosely coupled to a description-logic reasoner}: the node type \texttt{account} is a \tbox{} concept ($\texttt{account}\sqsubseteq\texttt{financial-concept}$) and the edge labels \texttt{deposit}/\texttt{withdrawal} are \tbox{} roles related by \texttt{inverse}, so a hybrid \nrql{} query mixes property-graph pattern matching with \owl{}/DL concept and role reasoning, inverses, and \naf{}. We are aware of no prior or contemporary system that combined a queryable property graph with a tableau DL reasoner this way. The substrate also answers the motivation directly: attaching \texttt{:amount}/\texttt{:currency} to the \texttt{deposit} \emph{relationship} is awkward in \rdf{} or DL (it forces reification or n-ary workarounds), which is exactly the shortcoming property graphs were meant to fix.
+
+\subsection{Priority, calibrated as in \S\ref{sec:priority}}
+The attributed/labeled-graph database \emph{model} is much older than 2005: Kuper and Vardi's Logical Data Model (1984) \cite{kupervardi}, the GOOD and hypernode models (1990) \cite{levene}, and especially G\"uting's \emph{GraphDB} (1994) \cite{guting}---which already modelled graphs with attributes on nodes and edges, with a query language, motivated by transportation networks---are recognizably graph-with-attributes models, surveyed by Angles and Gutierrez \cite{angles2008}. The branded model and the term came later: the Neo4j labeled-property-graph model was sketched around 2000 and released publicly around 2007, ``property graph'' was coined by Rodriguez and Neubauer in 2010 \cite{rodriguez2010}, and formal/standard treatments are later still (Angles' formal model, 2018; ISO GQL and SQL/PGQ, 2023--2024). \racer{}'s 2005 substrate therefore sits \emph{between} the academic graph-data-model tradition and the productized property-graph wave---an independent reinvention of a recurring idea.
+
+So the calibrated claim is neither ``\racer{} invented property graphs'' (the model predates it by two decades) nor ``\racer{} influenced Cypher/GQL'' (no citation trail; these emerged from the graph-database and application world \cite{cypher2018}). It is the defensible middle: \racer{}'s data substrate is an early (2005), working, \emph{reasoning-coupled} property-graph store with edge-attribute querying---legitimate, and currently uncited, prior art for the combination of property graphs with description-logic reasoning, exhibiting the same convergent evolution that recurs throughout this history rather than any documented lineage.
 
 \section{Answer to the main question}\label{sec:answer}
 
@@ -500,6 +528,15 @@ Leonid Libkin. \emph{Elements of Finite Model Theory}. Springer, 2004.
 
 \bibitem{angles2008}
 Renzo Angles and Claudio Gutierrez. Survey of Graph Database Models. \emph{ACM Computing Surveys}, 40(1), Article~1, 2008.
+
+\bibitem{kupervardi}
+Gabriel M. Kuper and Moshe Y. Vardi. A New Approach to Database Logic (The Logical Data Model). In \emph{Proc.\ 3rd ACM SIGACT-SIGMOD Symposium on Principles of Database Systems (PODS 1984)}, 1984; journal version \emph{ACM Transactions on Database Systems} 18(3):379--413, 1993.
+
+\bibitem{levene}
+Mark Levene and Alexandra Poulovassilis. The Hypernode Model and its Associated Query Language. In \emph{Proc.\ 5th Jerusalem Conference on Information Technology}, 1990. See also the GOOD model: Marc Gyssens, Jan Paredaens, and Dirk Van Gucht, A Graph-Oriented Object Database Model, \emph{PODS 1990}.
+
+\bibitem{guting}
+Ralf Hartmut G\"uting. GraphDB: Modeling and Querying Graphs in Databases. In \emph{Proc.\ 20th International Conference on Very Large Data Bases (VLDB 1994)}, pages 297--308, 1994.
 
 \bibitem{cypher2018}
 Nadime Francis, Alastair Green, Paolo Guagliardo, Leonid Libkin, Tobias Lindaaker, Victor Marsault, Stefan Plantikow, Mats Rydberg, Petra Selmer, and Andr\'es Taylor. Cypher: An Evolving Query Language for Property Graphs. In \emph{Proc.\ 2018 International Conference on Management of Data (SIGMOD 2018)}, pages 1433--1445, 2018.

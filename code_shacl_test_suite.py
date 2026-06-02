@@ -19,6 +19,15 @@ Path tests are bucketed by actual operator content (N iff they use
 zeroOrMorePath/oneOrMorePath), not by filename. sh:pattern tests are bucketed by
 their actual regex: a literal substring with no flags is C (substrate `search`),
 otherwise N -- RacerPro has no regex engine (User's Guide pp. 63-64, 137).
+
+IMPORTANT TIER CAVEAT: N is the residual relative to the *declarative* nRQL
+fragment. nRQL also has a lambda + :reject escape hatch (arbitrary server-side
+Common Lisp filter predicates, User's Guide pp. 146-148) -- the analogue of
+SHACL-SPARQL / SHACL-JS. That hatch closes the regex pattern tests outright and,
+via hand-coded traversal, even the path tests. So relative to *full* nRQL the
+SHACL-Core expressivity residual collapses; the genuine residual is SHACL's
+recursive conformance semantics and report model, not expressivity. See paper
+section 5.5.
 """
 import os, re, csv, collections
 

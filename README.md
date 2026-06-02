@@ -66,7 +66,8 @@ original in four ways:
 constraint features have a direct nRQL counterpart** (≈92% once the substrate
 mirror is granted), while the **provably-native residual is only ~5% — entirely
 unbounded or recursive property paths** (best single estimate ~8% once you add
-`sh:pattern` regexes, which RacerPro can't do). The width of the band is set by
+`sh:pattern` regexes, which RacerPro can't do *declaratively* — see the tier
+caveat below). The width of the band is set by
 how much RDF-term/lexical structure you assume mirrored; that dependence on
 assumptions is the honest replacement for a single number. The old "80%" sits
 inside the direct-expressible band as a plausible midpoint — which is why it felt
@@ -84,11 +85,23 @@ constraint** tests:
 
 Of the 7 **N** tests, **4 are unbounded/recursive property paths** — provably
 native (Proposition 1: transitive closure is not first-order definable) — and
-**3 are `sh:pattern` tests needing real regex** (RacerPro has only `string=` /
-`string<>` and substrate substring `search`, no regex engine). Reproduce with
-`python3 code_shacl_test_suite.py` after cloning `w3c/data-shapes`. Caveat: this
-measures feature *coverage*, not real-world deployment *frequency* — the
-complementary study is a corpus of deployed shapes graphs.
+**3 are `sh:pattern` tests needing real regex** (RacerPro's *declarative* fragment
+has only `string=` / `string<>` and substrate substring `search`, no regex engine).
+
+**Important tier caveat.** Those numbers describe the *declarative* fragment. nRQL
+also has a **lambda + `:reject` escape hatch** — arbitrary server-side Common Lisp
+filter predicates (User's Guide pp. 146–148) — which is the exact analogue of
+**SHACL-SPARQL** and **SHACL-JS**. A lambda calling a CL regex library implements
+full `sh:pattern`; via a hand-coded traversal it can even compute unbounded paths.
+So relative to *full* nRQL the 3 regex tests vanish and only the 4 paths resist —
+and even those only *declaratively*. Both languages carry a Turing-complete escape
+hatch, so at that tier the expressivity residual collapses to **zero**; what
+genuinely survives is SHACL's recursive **conformance semantics** and **report
+model**, not expressivity. (See the paper's §5.5.)
+
+Reproduce with `python3 code_shacl_test_suite.py` after cloning `w3c/data-shapes`.
+Caveat: this measures feature *coverage*, not real-world deployment *frequency* —
+the complementary study is a corpus of deployed shapes graphs.
 
 ## Illustrative SHACL → nRQL translations
 
@@ -111,22 +124,24 @@ markers (p. 141). Buckets are **E** (direct), **C** (conditional/lossy), **N**
 | `maxCount-001` | `ex:firstName` `sh:maxCount 1` | `(retrieve (?x) (and (?x Person) (?x $?y1 firstName) (?x $?y2 firstName) (neg (same-as $?y1 $?y2))))` — `same-as` + non-injective `$?` vars (pp. 85, 153); counts *known individuals*, not RDF terms (no UNA) ¹ | **C** |
 | `datatype-002` | `ex:value` `sh:datatype xsd:string` | enforced by concrete-domain typing — `(define-concrete-domain-attribute value :type string)` makes a non-string filler unassertable/queryable; or test the mirrored `:owl-datatype-value` node ² | **E** |
 | `pattern-001` | `ex:property` `sh:pattern "Joh"` | `(retrieve (?x) (and (?x ?y property) (neg (?y (:predicate (search "Joh"))))))` — `(:predicate (search …))` is **substring** search (p. 137) ³ | **C** |
-| `nodeKind-001` | focus node `sh:nodeKind sh:IRI` | **No native primitive** for RDF term kind. Expressible only by encoding term kind as a substrate label and testing it with `(:predicate (equalp …))` | **C** |
+| `nodeKind-001` | focus node `sh:nodeKind sh:IRI` | **No native declarative primitive** for RDF term kind — encode it as a substrate label and test with `(:predicate (equalp …))`, or use a `lambda`/`:reject` filter that inspects the term (the SHACL-SPARQL-style hatch) | **C** |
 | `closed-001` | `sh:closed true`, only `ex:someProperty` allowed | `(retrieve (?*x ?*y) (and (?*x ?*y `_‹any-edge›_`) (neg (?*x ?*y (:predicate (equalp someProperty))))))` — `:predicate (equalp …)` is real (p. 137); needs the mirror to expose predicate labels on edges | **C** |
 | `qualifiedValueShape-001` | `ex:related` `sh:qualifiedMinCount 3` of shape `Q` | `(retrieve (?x) (neg (project-to (?x) (and (?x $?a related) (substitute (Q $?a)) (?x $?b related) (substitute (Q $?b)) (?x $?c related) (substitute (Q $?c)) (neg (same-as $?a $?b)) (neg (same-as $?a $?c)) (neg (same-as $?b $?c))))))` — `Q` is a `defquery`; the 3-distinct idiom is verbatim from p. 100 | **E** |
 | `path-zeroOrMore-001` | `[ sh:zeroOrMorePath ex:child ]` `sh:minCount 2` | **No nonrecursive nRQL query exists** — the EBNF `<query-body>` (pp. 152–153) has *no* transitive-closure / regular-path operator. Recover via a transitive role, a recursive `firerule`, or precomputed substrate closure | **N** |
 
 ¹ For the string-valued `firstName`, distinctness is over told datatype fillers, not ABox individuals; `same-as` ranges over `<abox-query-object>`s (grammar, p. 153).
 ² RacerPro datatype attributes carry a declared type, so datatype conformance is enforced by the concrete domain; the exact predicate depends on the mirror encoding.
-³ **Correction to the earlier draft:** RacerPro's concrete domain offers only `string=` / `string<>` (pp. 63–64) and the substrate offers substring `search` (p. 137) — **there is no regex**. Full `sh:pattern` regexes are a genuine gap, which is why `pattern` and `nodeKind` sit at the native-leaning (pessimistic) end of the §10.3 band.
+³ RacerPro's *declarative* concrete domain offers only `string=` / `string<>` (pp. 63–64) and the substrate substring `search` (p. 137) — no regex. But nRQL's **lambda + `:reject`** facility (pp. 146–148) defines arbitrary server-side Common Lisp filter predicates, so a lambda calling a CL regex library *does* implement full `sh:pattern` — the analogue of a SHACL-SPARQL `FILTER regex(…)`. So regex is a *declarative-core* gap, closed by the escape hatch (paper §5.5).
 
-**The grammar settles the one hard case.** The EBNF for `<query-body>` and
-`<abox-query-atom>` (User's Guide pp. 152–153) provides conjunction, disjunction,
-`neg`, `project-to`, `same-as`, `has-known-successor`, and concrete-domain/substrate
-`:predicate`s — but **no transitive-closure or regular-path operator**. So the
-single **N** row is not an artifact of the coding scheme: unbounded reachability is
-absent from the nRQL language *by construction* — which is exactly Proposition 1,
-now confirmed from the language definition itself.
+**The grammar settles the one hard *declarative* case.** The EBNF for `<query-body>`
+and `<abox-query-atom>` (User's Guide pp. 152–153) provides conjunction,
+disjunction, `neg`, `project-to`, `same-as`, `has-known-successor`, and
+concrete-domain/substrate `:predicate`s — but **no transitive-closure or
+regular-path operator**. So the **N** path rows are not an artifact of the coding
+scheme: unbounded reachability is absent from the *declarative* nRQL language *by
+construction* — exactly Proposition 1, confirmed from the language definition.
+(The lambda hatch can still *compute* reachability imperatively; what SHACL Core
+uniquely offers is regular paths as a *declarative* primitive.)
 
 ## Authorship
 

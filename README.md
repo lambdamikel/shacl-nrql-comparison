@@ -62,9 +62,18 @@ original in four ways:
 
 ## Empirical result
 
-The revised edition also reports an empirical coding of the official W3C SHACL
-test suite (the 2017 `data-shapes-test-suite`) against its Table 1. Of the 83
-SHACL **Core constraint** tests:
+**Headline (reframed from the old "80%"):** roughly **74–88% of SHACL Core
+constraint features have a direct nRQL counterpart** (≈95% once the substrate
+mirror is granted), while the **provably-native residual is only ~5% — and is
+entirely unbounded or recursive property paths**. The width of the band is set by
+how much RDF-term/lexical structure you assume mirrored; that dependence on
+assumptions is the honest replacement for a single number. The old "80%" sits
+inside the band as a plausible midpoint — which is why it felt right but was the
+wrong *kind* of statement (a point estimate instead of a band).
+
+This comes from coding the official W3C SHACL test suite (the 2017
+`data-shapes-test-suite`) against the paper's Table 1. Of the 83 SHACL **Core
+constraint** tests:
 
 | Bucket | Meaning | Share |
 | --- | --- | --- |
@@ -74,13 +83,36 @@ SHACL **Core constraint** tests:
 
 All four **N** tests are unbounded or recursive property paths — exactly the
 category the paper's Proposition 1 isolates analytically (transitive closure is
-not first-order definable). A sensitivity band puts direct expressibility at
-73.5–88% and the truly-native residual at ~5–14.5%, depending on mirroring
-assumptions; the old "80%" sits inside that band as a plausible midpoint, which
-is why it felt right but was the wrong *kind* of statement (a point estimate
-instead of a band). Reproduce with `python3 code_shacl_test_suite.py` after
-cloning `w3c/data-shapes`. Caveat: this measures feature *coverage*, not
-real-world deployment *frequency*.
+not first-order definable). Reproduce with `python3 code_shacl_test_suite.py`
+after cloning `w3c/data-shapes`. Caveat: this measures feature *coverage*, not
+real-world deployment *frequency* — the complementary study is a corpus of
+deployed shapes graphs.
+
+## Illustrative SHACL → nRQL translations
+
+Each row pairs an **actual W3C test case** with a faithful nRQL *violation* query
+(one that returns the non-conforming focus nodes — nRQL's natural way to express a
+constraint is "a query whose answers are the violations"). Queries assume a fixed
+entailment regime and, where noted, a faithful substrate mirror; markers like
+`:owl-datatype-value` and `:node-kind` are schematic substrate labels. Buckets are
+**E** (direct), **C** (conditional/lossy), **N** (native to SHACL).
+
+| W3C test case | SHACL constraint | nRQL violation query | Bucket |
+| --- | --- | --- | --- |
+| `minCount-001` | `ex:firstName` `sh:minCount 1` on class `ex:Person` | `(retrieve (?x) (and (?x Person) (neg (project-to (?x) (?x ?y firstName)))))` | **E** |
+| `class-001` | focus node must be `sh:class ex:Person` | `(retrieve (?x) (neg (?x Person)))` — `(?x Person)` is entailment-aware: a `MalePerson ⊑ Person` conforms, an `Animal` is returned as a violation | **E** |
+| `maxCount-001` | `ex:firstName` `sh:maxCount 1` | `(retrieve (?x) (and (?x Person) (?x ?y1 firstName) (?x ?y2 firstName) (neg (same-as ?y1 ?y2))))` — needs explicit distinctness; counts *known individuals*, not RDF terms (no unique-name assumption) | **C** |
+| `datatype-002` | `ex:value` `sh:datatype xsd:string` | `(retrieve (?x) (and (?x ?y value) (neg (?y (:owl-datatype-value string)))))` — returns `"A"@en` (an `rdf:langString`) and `42` (an integer) | **E** |
+| `pattern-001` | `ex:property` `sh:pattern "Joh"` | `(retrieve (?x) (and (?x ?y property) (neg (substring-search ?y "Joh"))))` — substrate string predicate (the manual documents substring search) | **C** |
+| `nodeKind-001` | focus node `sh:nodeKind sh:IRI` | `(retrieve (?*x) (neg (?*x (:node-kind :iri))))` — expressible **only if** term kind is mirrored as substrate data | **C** |
+| `closed-001` | `sh:closed true`, only `ex:someProperty` allowed | `(retrieve (?*x ?*y) (and (?*x ?*y (:abox-relationship)) (neg (?*x ?*y (:predicate (equalp ex:someProperty))))))` — needs predicate labels in the substrate | **C** |
+| `qualifiedValueShape-001` | `ex:related` `sh:qualifiedMinCount 3` of nested shape `Q` | `(retrieve (?x) (neg (project-to (?x) (and (?x ?a related) (Q ?a) (?x ?b related) (Q ?b) (?x ?c related) (Q ?c) (neg (same-as ?a ?b)) (neg (same-as ?a ?c)) (neg (same-as ?b ?c))))))` — `Q` abbreviates the nested body; requires 3 pairwise-distinct qualified values | **E** |
+| `path-zeroOrMore-001` | `[ sh:zeroOrMorePath ex:child ]` `sh:minCount 2` | **No nonrecursive nRQL query exists** (Proposition 1). Recover only by declaring `ex:child` transitive in the TBox, or a recursive rule materializing `child*`, then querying the materialized relation | **N** |
+
+The pattern is visible in the table: the **E**/**C** rows are routine
+NAF-over-projection idioms (with the documented caveats), and the single **N** row
+is exactly an unbounded path — the one place where no nonrecursive nRQL query can
+match SHACL, which is the analytical result the paper proves.
 
 ## Authorship
 

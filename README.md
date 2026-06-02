@@ -25,6 +25,34 @@ The genuinely new or partially new contributions of SHACL are mostly:
 3. built-in regular property-path evaluation over the raw RDF graph; and
 4. (when SHACL-SPARQL is admitted) the imported SPARQL algebra and vocabulary.
 
+## Two investigations
+
+This repository hosts two related historical-semantic threads:
+
+**1. What was conceptually new in SHACL?** (the report above) — comparing SHACL
+validation against what RacerPro's nRQL, negation-as-failure, rules, and the
+data/mirror substrate could already express by ~2005.
+
+**2. Where does the property-graph (PG) data model actually come from?** — a
+second thread, prompted by the observation that RacerPro's **data substrate**
+(2005) is *itself* a property graph: `data-node` / `data-edge` give **both** nodes
+and edges first-class, queryable key-value property maps, and the substrate is
+distinctively *coupled to a description-logic reasoner* (node types are OWL
+concepts, edge labels are roles with inverses). Was this an early, forgotten PG —
+and when did the PG model first appear in recognizable, *graphs-not-tables* form?
+
+**Calibrated verdict** (paper §11, with `pgraph-example.jpeg` as a worked RacerPro
+2.0 session): the attributed-graph *model* long predates Racer — Kuper–Vardi's
+Logical Data Model (1984), the GOOD and hypernode models (1990), Güting's GraphDB
+(1994) — while the *term* "property graph" was coined in 2010 (Rodriguez &
+Neubauer) and the standards (ISO GQL, SQL/PGQ) arrived in 2023–24. So Racer's
+substrate is **not** the first PG and shows **no** documented influence on
+Neo4j/Cypher/GQL — convergent evolution, not lineage. What *is* genuinely early,
+and as far as we can find without prior or contemporary peer, is the combination:
+a queryable **property graph fused with a tableau DL/OWL reasoner**. Both threads
+use the same discipline — separating *prior art* and *conceptual convergence* from
+*documented influence*, crediting only what the sources support.
+
 ## Contents
 
 | File | Description |
@@ -33,6 +61,7 @@ The genuinely new or partially new contributions of SHACL are mostly:
 | `shacl_nrql_comparison_revised.tex` | LaTeX source for the revised edition. |
 | `code_shacl_test_suite.py` | Reproducible coding of the W3C SHACL test suite against the paper's Table 1. |
 | `shacl_test_suite_coding.csv` | Per-file audit trail for the coding (95 SHACL Core tests). |
+| `pgraph-example.jpeg` | A property graph (bank accounts + a `deposit` edge with `:amount`/`:currency`) built and queried in RacerPro 2.0 — evidence for investigation 2. |
 | `nrql_shacl_report_ai_declaration.pdf` | Original report (PDF). |
 | `nrql_shacl_report_ai_declaration.tex` | LaTeX source for the original report. |
 

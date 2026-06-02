@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage[paperwidth=12in,paperheight=11.7in,margin=0.5in]{geometry}
+\usepackage[paperwidth=12in,paperheight=12.0in,margin=0.5in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{xcolor}
@@ -54,7 +54,7 @@ RacerPro \textcolor{nrqlgreen}{nRQL} couldn't already do in 2005?\par}
 \vspace{12pt}
 
 %% ---------- Example 1: required property ----------
-\begin{tcbraster}[raster columns=2, raster column skip=7mm, raster equal height=rows]
+\begin{center}\begin{minipage}{0.82\textwidth}\begin{tcbraster}[raster columns=2, raster column skip=6mm, raster equal height=rows]
 \begin{shaclbox}{SHACL Core --- required property}
 ex:PersonShape
   a sh:NodeShape ;
@@ -71,13 +71,13 @@ ex:PersonShape
       (project-to (?x)
         (?x ?y firstName)))))
 \end{nrqlbox}
-\end{tcbraster}
-{\large\color{muted} A \textbf{negated projected subquery} $=$ \texttt{NOT EXISTS} / anti-join --- nRQL had it before SPARQL\,1.1 (2013) standardized \texttt{FILTER NOT EXISTS}.\par}
+\end{tcbraster}\end{minipage}\end{center}
+{\Large\color{muted} A \textbf{negated projected subquery} $=$ \texttt{NOT EXISTS} / anti-join --- nRQL had it before SPARQL\,1.1 (2013) standardized \texttt{FILTER NOT EXISTS}.\par}
 
 \vspace{11pt}
 
 %% ---------- Example 2: value type (with DL entailment) ----------
-\begin{tcbraster}[raster columns=2, raster column skip=7mm, raster equal height=rows]
+\begin{center}\begin{minipage}{0.82\textwidth}\begin{tcbraster}[raster columns=2, raster column skip=6mm, raster equal height=rows]
 \begin{shaclbox}{SHACL Core --- every value must be a Person}
 ex:ParentShape
   a sh:NodeShape ;
@@ -94,22 +94,22 @@ ex:ParentShape
     (neg
       (?y Person))))
 \end{nrqlbox}
-\end{tcbraster}
-{\large\color{muted} Violation $=$ a known child that is \emph{not} a \texttt{Person}. And \texttt{(?y Person)} uses \textbf{DL entailment} --- an \emph{inferred} Person passes, no materialization needed.\par}
+\end{tcbraster}\end{minipage}\end{center}
+{\Large\color{muted} Violation $=$ a known child that is \emph{not} a \texttt{Person}. And \texttt{(?y Person)} uses \textbf{DL entailment} --- an \emph{inferred} Person passes, no materialization needed.\par}
 
 \vspace{14pt}
 
-\begin{tcolorbox}[colback=graybg, colframe=black!15, boxrule=0.8pt, arc=3mm, left=6mm, right=6mm, top=4mm, bottom=4mm]
+\begin{tcolorbox}[colback=graybg, colframe=black!15, boxrule=0.8pt, arc=3mm, left=8mm, right=8mm, top=7mm, bottom=7mm]
 \centering\color{ink}
-{\Large\bfseries Coding the W3C SHACL test suite}\\[5pt]
-{\large $\sim$\textbf{73--84\%} of SHACL Core constraint tests had a \textbf{direct nRQL counterpart}.}\\[3pt]
-{\large The provably-native residual is only $\sim$\textbf{5\%} --- entirely \textbf{unbounded regular property paths}}\\[1pt]
-{\large (a theorem, not a hunch: transitive closure isn't first-order definable).}
+{\huge\bfseries Coding the W3C SHACL test suite}\\[12pt]
+{\Large $\sim$\textbf{73--84\%} of SHACL Core constraint tests had a \textbf{direct nRQL counterpart}.}\\[8pt]
+{\Large The provably-native residual is only $\sim$\textbf{5\%} --- entirely \textbf{unbounded regular property paths}}\\[5pt]
+{\Large (a theorem, not a hunch: transitive closure isn't first-order definable).}
 \end{tcolorbox}
 
 \vspace{9pt}
-{\large\color{nrqlgreen}\bfseries What \emph{was} genuinely new in SHACL:}
-{\large\color{ink} recursive shape-conformance semantics, native regular paths, RDF-term-level validation, a standardized report model.}\par
+{\Large\color{nrqlgreen}\bfseries What \emph{was} genuinely new in SHACL:}
+{\Large\color{ink} recursive shape-conformance semantics, native regular paths, RDF-term-level validation, a standardized report model.}\par
 
 \vspace{7pt}
 {\color{muted}\large Prior art \& convergence --- \emph{not} documented influence. \qquad

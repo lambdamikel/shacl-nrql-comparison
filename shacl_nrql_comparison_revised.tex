@@ -98,7 +98,7 @@ This report re-examines a specific historical-semantic question: what did \shacl
 
 Second, it replaces the earlier ``informal expressivity theorem''---which assumed away exactly the hard cases---with an explicit \emph{reduction lemma} whose stated assumptions mark the true boundary of the comparison. Third, it sharpens what is genuinely new in \shacl{} to two items with rigorous backing rather than one: (i)~a \emph{recursive} shape-conformance relation, whose semantics is a nontrivial object (partial / stable / well-founded assignments) and whose associated decision problems can be NP-hard or undecidable \cite{recshacl,stableshacl,satcont}; and (ii)~\emph{unbounded regular property paths}, which are provably beyond the nonrecursive \naf{}-plus-projection fragment because transitive closure is not first-order definable \cite{ahoullman,libkin}. \rdf{}-term-native components (node kind, language tags, lexical form) and \shacl{}'s validation-report vocabulary are conditional or organizational differences. Fourth, it adds a section on three \emph{semantic traps} in the naive translation---epistemic-mode mismatch, cardinality counting without a unique-name assumption, and the active-domain-versus-anonymous-witness gap---that the earlier draft underweighted.
 
-The net conclusion is unchanged in spirit but more precise: the large majority of recurring \emph{OWL-centric, finite, closed-world} integrity checks that \shacl{} is used for were already within reach of \nrql{} plus the mirror substrate by 2005, and \nrql{} deserves explicit recognition as prior art for negated projected subqueries in a practical \owl{} query engine. We deliberately attach \emph{no} percentage to ``large majority,'' and we decline the earlier draft's property-graph priority claim as unsupported. The residual novelty of \shacl{} is concentrated, precisely, in recursive shape conformance, native regular-path validation, \rdf{}-term primitives, and the standardized conformance/report model.
+The net conclusion is unchanged in spirit but more precise: the large majority of recurring \emph{OWL-centric, finite, closed-world} integrity checks that \shacl{} is used for were already within reach of \nrql{} plus the mirror substrate by 2005, and \nrql{} deserves explicit recognition as prior art for negated projected subqueries in a practical \owl{} query engine. In place of the earlier draft's bare ``$80\%$'' we report an empirical \emph{band} from coding the W3C \shacl{} test suite (\S\ref{sec:empirical}): of the \shacl{} Core constraint tests, $\approx 74\%$ have a direct \nrql{} counterpart, $\approx 22\%$ are expressible conditional on mirroring or with a documented caveat, and only $\approx 5\%$---every one an unbounded or recursive property path---are genuinely native, matching the analytical prediction of Proposition~\ref{prop:paths}; we also decline the earlier draft's property-graph priority claim as unsupported. The residual novelty of \shacl{} is concentrated, precisely, in recursive shape conformance, native regular-path validation, \rdf{}-term primitives, and the standardized conformance/report model.
 \end{abstract}
 
 \section*{Generative AI authorship and independence declaration}\label{sec:ai-declaration}
@@ -325,7 +325,57 @@ The earlier draft summarized the result as ``$\approx 80\%$.'' We withdraw the n
 For the recurring family of \emph{OWL-centric, finite, closed-world} integrity checks---required properties, cardinalities, qualified value constraints, type/datatype/string checks, disjointness/equality, annotation and ontology-metadata governance, and absence-of-counterexample constraints---\emph{and modulo a fixed entailment regime}, \nrql{} plus the mirror substrate was already expressively adequate by 2005. The residual is concentrated in recursive shape conformance (\S\ref{sec:recursion}), native unbounded paths (\S\ref{sec:paths}), \rdf{}-term primitives (\S\ref{sec:term}), and the standardized conformance/report model.
 \end{quote}
 
-A genuine quantitative figure would require coding a corpus---e.g.\ the \shacl{} test suite, or a sample of published shapes graphs---against Table~\ref{tab:translation} under an explicit regime, and reporting inter-coder agreement. We mark that as the right future-work experiment and decline to pre-empt its result with a guess.
+A genuine quantitative figure would require coding a corpus---e.g.\ the \shacl{} test suite, or a sample of published shapes graphs---against Table~\ref{tab:translation} under an explicit regime, and reporting the coding openly. We carry out exactly this experiment for the W3C \shacl{} test suite in \S\ref{sec:empirical}.
+
+\section{Empirical coding of the W3C SHACL test suite}\label{sec:empirical}
+
+Rather than leave the ``large majority'' qualitative, we coded the official W3C \shacl{} test suite---the \texttt{data-shapes-test-suite} that accompanies the 2017 Recommendation \cite{shacl}---against Table~\ref{tab:translation}.
+
+\subsection{Method}
+The unit of analysis is one \emph{main} test file (manifests and \texttt{-data}/\texttt{-shapes} include files excluded; constraint components unioned across a test's includes). Each \texttt{core/} test is assigned the feature it isolates---the suite is organized by constraint component, so the filename names the feature under test---and then a bucket:
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{E} (expressible): a direct \nrql{}/\racer{} counterpart exists under a fixed regime and a faithful mirror (Lemma~\ref{lem:reduction});
+  \item \textbf{C} (conditional/lossy): expressible only if specific \rdf{}-term structure is mirrored, or with a documented \S\ref{sec:traps} caveat (cardinality without UNA; lexical checks via substrate string predicates; term kind; language tags; closed shapes);
+  \item \textbf{N} (native residual): outside the nonrecursive \naf{}-plus-projection fragment (unbounded or recursive paths; recursion);
+  \item \textbf{M} (meta/reporting): not a constraint at all (\texttt{sh:deactivated}, \texttt{sh:message}, \texttt{sh:severity})---the organizational category of \S\ref{sec:new}.5.
+\end{itemize}
+Path tests are bucketed by \emph{actual operator content}---N iff the shapes graph uses \texttt{sh:zeroOrMorePath} or \texttt{sh:oneOrMorePath}---not by filename. The coding script and a per-file audit CSV accompany this report so the coding can be replicated and contested. The \texttt{core/complex} composite tests (2) and the \texttt{sparql/} tests (23; the SHACL-SPARQL extension, conditional by construction) are reported separately, not folded into the Core totals.
+
+\subsection{Results}
+Across the 95 coded \texttt{core/} tests:
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{clrr}
+\toprule
+Bucket & Meaning & $n$ & \% \\
+\midrule
+E & Expressible (direct \nrql{} counterpart) & 68 & 71.6 \\
+C & Conditional / lossy (mirror or \S\ref{sec:traps} caveat) & 18 & 18.9 \\
+N & Native residual (unbounded / recursive paths) & 4 & 4.2 \\
+M & Meta / reporting (organizational) & 5 & 5.3 \\
+\midrule
+& Total & 95 & 100.0 \\
+\bottomrule
+\end{tabular}
+\caption{Coding of the W3C \shacl{} Core test suite against Table~\ref{tab:translation}.}\label{tab:empirical}
+\end{table}
+
+Restricting to the 83 genuine \emph{constraint} tests (excluding 7 target-selection and 5 meta tests) gives $E=61$ (73.5\%), $C=18$ (21.7\%), $N=4$ (4.8\%). The decisive observation is \emph{which} tests are native: all four N tests---\texttt{path-zeroOrMore-001}, \texttt{path-oneOrMore-001}, \texttt{path-complex-001} (which uses \texttt{sh:zeroOrMorePath}), and \texttt{path-unused-001} (whose shape is a recursive \texttt{sh:zeroOrMorePath})---are unbounded or recursive property paths. The empirical residual is \emph{exactly} the category Proposition~\ref{prop:paths} isolates analytically; no other \shacl{} Core component landed in N.
+
+\subsection{Sensitivity, and the fate of ``80\%''}
+The C bucket is where coder judgment bites, so we report a band, not a point. C comprises lexical checks (\texttt{pattern}, \texttt{minLength}, \texttt{maxLength}; 8 tests), term-kind/language checks (\texttt{nodeKind}, \texttt{languageIn}, \texttt{uniqueLang}; 6), closed shapes (2), and \texttt{maxCount} (2). Moving the lexical and \texttt{maxCount} tests to E---the manual documents substrate string predicates and counting---raises direct expressibility to $\approx 85$--$88\%$; conversely, treating every \rdf{}-term-native and closed-shape feature as unreachable because nothing is mirrored raises the native residual to $12/83 \approx 14.5\%$. Hence
+\[
+\text{direct-expressible } E \in [73.5\%,\ \approx\!88\%], \qquad \text{native residual } N \in [4.8\%,\ \approx\!14.5\%].
+\]
+The earlier draft's ``$80\%$'' lands squarely inside the $E$ band. This vindicates it as a \emph{plausible midpoint} while confirming the methodological point of \S\ref{sec:headline}: the honest object is a band whose width is fixed by explicit mirroring assumptions, not a single number---and the part that is \emph{provably} new is small ($\approx 5\%$) and entirely concentrated in unbounded paths.
+
+\subsection{Threats to validity}
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Coverage, not frequency.} A conformance suite weights each component by test count, not by how often it occurs in deployed shapes. This measures feature-level expressibility \emph{coverage}, not deployment \emph{share}; a usage-frequency study over real shapes graphs would be a complementary and different experiment.
+  \item \textbf{Recursion is under-exercised.} The 2017 Core suite barely tests recursive shapes (they surface mainly in the \texttt{core/complex} SHACL-of-SHACL test). The genuine hardness of recursion (\S\ref{sec:recursion}) is a decision-problem fact---NP-hardness and undecidability \cite{recshacl,satcont}---not a feature-coverage fact, so the $4.8\%$ residual \emph{understates} the conceptual novelty of recursive conformance.
+  \item \textbf{Single automated coder.} One coding scheme was applied; no second coder or inter-rater agreement was computed. The per-file CSV is published so the coding can be audited.
+\end{enumerate}
 
 \section{A claim we decline: property graphs}\label{sec:declined}
 

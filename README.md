@@ -31,6 +31,8 @@ The genuinely new or partially new contributions of SHACL are mostly:
 | --- | --- |
 | `shacl_nrql_comparison_revised.pdf` | **Revised edition** of the comparison (PDF) — recommended. |
 | `shacl_nrql_comparison_revised.tex` | LaTeX source for the revised edition. |
+| `code_shacl_test_suite.py` | Reproducible coding of the W3C SHACL test suite against the paper's Table 1. |
+| `shacl_test_suite_coding.csv` | Per-file audit trail for the coding (95 SHACL Core tests). |
 | `nrql_shacl_report_ai_declaration.pdf` | Original report (PDF). |
 | `nrql_shacl_report_ai_declaration.tex` | LaTeX source for the original report. |
 
@@ -57,6 +59,28 @@ original in four ways:
    priority claim are withdrawn; a new section covers three translation traps
    (epistemic-mode mismatch, counting without a unique-name assumption, and the
    active-domain-vs-anonymous-witness gap).
+
+## Empirical result
+
+The revised edition also reports an empirical coding of the official W3C SHACL
+test suite (the 2017 `data-shapes-test-suite`) against its Table 1. Of the 83
+SHACL **Core constraint** tests:
+
+| Bucket | Meaning | Share |
+| --- | --- | --- |
+| **E** | direct nRQL counterpart | 73.5% |
+| **C** | conditional on mirroring, or with a documented caveat | 21.7% |
+| **N** | genuinely native to SHACL (unbounded / recursive paths) | 4.8% |
+
+All four **N** tests are unbounded or recursive property paths — exactly the
+category the paper's Proposition 1 isolates analytically (transitive closure is
+not first-order definable). A sensitivity band puts direct expressibility at
+73.5–88% and the truly-native residual at ~5–14.5%, depending on mirroring
+assumptions; the old "80%" sits inside that band as a plausible midpoint, which
+is why it felt right but was the wrong *kind* of statement (a point estimate
+instead of a band). Reproduce with `python3 code_shacl_test_suite.py` after
+cloning `w3c/data-shapes`. Caveat: this measures feature *coverage*, not
+real-world deployment *frequency*.
 
 ## Authorship
 

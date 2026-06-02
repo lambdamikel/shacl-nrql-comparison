@@ -62,14 +62,15 @@ original in four ways:
 
 ## Empirical result
 
-**Headline (reframed from the old "80%"):** roughly **74–88% of SHACL Core
-constraint features have a direct nRQL counterpart** (≈95% once the substrate
-mirror is granted), while the **provably-native residual is only ~5% — and is
-entirely unbounded or recursive property paths**. The width of the band is set by
+**Headline (reframed from the old "80%"):** roughly **73–84% of SHACL Core
+constraint features have a direct nRQL counterpart** (≈92% once the substrate
+mirror is granted), while the **provably-native residual is only ~5% — entirely
+unbounded or recursive property paths** (best single estimate ~8% once you add
+`sh:pattern` regexes, which RacerPro can't do). The width of the band is set by
 how much RDF-term/lexical structure you assume mirrored; that dependence on
 assumptions is the honest replacement for a single number. The old "80%" sits
-inside the band as a plausible midpoint — which is why it felt right but was the
-wrong *kind* of statement (a point estimate instead of a band).
+inside the direct-expressible band as a plausible midpoint — which is why it felt
+right but was the wrong *kind* of statement (a point estimate instead of a band).
 
 This comes from coding the official W3C SHACL test suite (the 2017
 `data-shapes-test-suite`) against the paper's Table 1. Of the 83 SHACL **Core
@@ -78,15 +79,16 @@ constraint** tests:
 | Bucket | Meaning | Share |
 | --- | --- | --- |
 | **E** | direct nRQL counterpart | 73.5% |
-| **C** | conditional on mirroring, or with a documented caveat | 21.7% |
-| **N** | genuinely native to SHACL (unbounded / recursive paths) | 4.8% |
+| **C** | conditional on mirroring, or with a documented caveat | 18.1% |
+| **N** | genuinely native to SHACL | 8.4% |
 
-All four **N** tests are unbounded or recursive property paths — exactly the
-category the paper's Proposition 1 isolates analytically (transitive closure is
-not first-order definable). Reproduce with `python3 code_shacl_test_suite.py`
-after cloning `w3c/data-shapes`. Caveat: this measures feature *coverage*, not
-real-world deployment *frequency* — the complementary study is a corpus of
-deployed shapes graphs.
+Of the 7 **N** tests, **4 are unbounded/recursive property paths** — provably
+native (Proposition 1: transitive closure is not first-order definable) — and
+**3 are `sh:pattern` tests needing real regex** (RacerPro has only `string=` /
+`string<>` and substrate substring `search`, no regex engine). Reproduce with
+`python3 code_shacl_test_suite.py` after cloning `w3c/data-shapes`. Caveat: this
+measures feature *coverage*, not real-world deployment *frequency* — the
+complementary study is a corpus of deployed shapes graphs.
 
 ## Illustrative SHACL → nRQL translations
 

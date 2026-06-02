@@ -16,7 +16,9 @@ Each *main* test file (excluding manifests and -data/-shapes includes) is assign
       M = Meta/reporting: not a constraint-expressivity feature (deactivated,
           message, severity) -> the paper's "organizational" category.
 Path tests are bucketed by actual operator content (N iff they use
-zeroOrMorePath/oneOrMorePath), not by filename.
+zeroOrMorePath/oneOrMorePath), not by filename. sh:pattern tests are bucketed by
+their actual regex: a literal substring with no flags is C (substrate `search`),
+otherwise N -- RacerPro has no regex engine (User's Guide pp. 63-64, 137).
 """
 import os, re, csv, collections
 
@@ -74,19 +76,30 @@ def feature_of(fn):
             return key
     return None
 
-def components_in(path):
-    # Union components from the main test file and any sibling -shapes/-data includes,
-    # because some tests place the shapes graph in a separate file.
+def _text_with_includes(path):
     paths = [path]
     base = path[:-4]
     for suf in ("-shapes.ttl", "-data.ttl"):
         if os.path.exists(base + suf):
             paths.append(base + suf)
-    comps = set()
-    for p in paths:
-        txt = open(p, encoding="utf-8", errors="replace").read()
-        comps |= set(re.findall(r"sh:[A-Za-z]+", txt))
-    return comps
+    return "\n".join(open(p, encoding="utf-8", errors="replace").read() for p in paths)
+
+def components_in(path):
+    # Union components from the main test file and any sibling -shapes/-data includes,
+    # because some tests place the shapes graph in a separate file.
+    return set(re.findall(r"sh:[A-Za-z]+", _text_with_includes(path)))
+
+def pattern_bucket(path):
+    # RacerPro has no regex: the concrete domain offers only string=/string<> and
+    # the substrate offers a plain substring `search` (User's Guide pp. 63-64, 137).
+    # So an sh:pattern test is expressible (C) only if its pattern is a literal
+    # substring with no flags; regex metacharacters or sh:flags push it to N.
+    txt = _text_with_includes(path)
+    has_flags = "sh:flags" in txt
+    m = re.search(r'sh:pattern\s+"((?:[^"\\]|\\.)*)"', txt)
+    pat = m.group(1) if m else ""
+    has_meta = bool(re.search(r"[\^$\[\](){}*+?|\\.]", pat))
+    return "N" if (has_flags or has_meta) else "C"
 
 rows = []
 for d in CORE_DIRS:
@@ -101,6 +114,8 @@ for d in CORE_DIRS:
         if bucket == "PATH" or feat and feat.startswith("path-"):
             unbounded = ("sh:zeroOrMorePath" in comps) or ("sh:oneOrMorePath" in comps)
             bucket = "N" if unbounded else "E"
+        if feat == "pattern":
+            bucket = pattern_bucket(path)  # regex/flags -> N (RacerPro has no regex)
         if feat is None:
             bucket = "?"
             feat = "UNRECOGNIZED:" + fn
@@ -148,6 +163,12 @@ for b in ["E", "C", "N"]:
 print(f"     {'TOTAL':<48} {ctot:>3}")
 print(f"\n  E+C (expressible, possibly with caveat): {cc['E']+cc['C']} / {ctot} = {100*(cc['E']+cc['C'])/ctot:.1f}%")
 print(f"  N   (genuinely native to SHACL):         {cc['N']} / {ctot} = {100*cc['N']/ctot:.1f}%")
+
+# Split N into the *provable* part (paths, Proposition 1) and the rest (regex/flag patterns)
+n_paths = sum(1 for r in constraint_rows if r[3] == "N" and r[2].startswith("path-"))
+n_other = cc["N"] - n_paths
+print(f"      of which provably native (unbounded paths, Prop. 1): {n_paths} / {ctot} = {100*n_paths/ctot:.1f}%")
+print(f"      of which native given documented built-ins (sh:pattern regex/flags): {n_other}")
 
 # complex + sparql, reported separately
 print("\n" + "=" * 78)

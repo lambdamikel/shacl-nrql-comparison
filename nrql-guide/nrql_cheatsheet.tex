@@ -1,0 +1,208 @@
+\documentclass[9pt]{extarticle}
+\usepackage[landscape,margin=0.40in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+\definecolor{hdr}{HTML}{1F6FEB}
+\definecolor{acc}{HTML}{1A7F37}
+\definecolor{kw}{HTML}{8250DF}
+\definecolor{str}{HTML}{0A3069}
+\definecolor{com}{HTML}{6E7781}
+\definecolor{ink}{HTML}{1F2328}
+\definecolor{panel}{HTML}{F6F8FA}
+
+\setlength{\parindent}{0pt}
+\setlength{\columnsep}{12pt}
+\setlength{\multicolsep}{4pt}
+
+\lstdefinelanguage{nrql}{
+  morekeywords={retrieve,retrieve1,tbox-retrieve,defquery,firerule,and,union,neg,project-to,
+    inv,substitute,same-as,has-known-successor,instance,related,constrained,constraints,
+    implies,equivalent,disjoint,inverse,implies-role,define-primitive-role,
+    define-concrete-domain-attribute,in-tbox,in-abox,in-data-box,in-mirror-data-box,full-reset,
+    data-node,data-edge,node-label,edge-label,prepare-abox-query,query-consistent-p,query-entails-p,
+    query-equivalent-p,owl-read-file,owl-read-document,classify-tbox,realize-abox,taxonomy,
+    individual-instance?,individual-types,concept-instances,concept-subsumes?,concept-satisfiable?,
+    abox-consistent?,different-from,evaluate,told-value,some,all,at-least,at-most,exactly,one-of,
+    an,a,not,top,bottom,NIL},
+  sensitive=false, morecomment=[l]{;}, morestring=[b]"
+}
+\lstset{
+  basicstyle=\scriptsize\ttfamily\color{ink},
+  keywordstyle=\color{kw}\bfseries, commentstyle=\color{com}\itshape, stringstyle=\color{str},
+  columns=fullflexible, keepspaces=true, showstringspaces=false,
+  breaklines=true, breakindent=10pt, aboveskip=2pt, belowskip=1pt, xleftmargin=1pt
+}
+\newcommand{\sect}[1]{\vspace{2pt}{\color{hdr}\footnotesize\bfseries #1}\par\vspace{-3pt}{\color{hdr!40}\rule{\linewidth}{0.6pt}}\par\vspace{1pt}}
+\newcommand{\code}[1]{{\ttfamily\small #1}}
+\pagestyle{empty}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries\color{ink} nRQL Cheat Sheet}\quad{\color{com}\small the RacerPro Query Language\ \ $\cdot$\ \ verified on RacerPro 2.0\ \ $\cdot$\ \ github.com/lambdamikel/shacl-nrql-comparison}
+\end{center}
+\vspace{-4pt}
+{\footnotesize\color{ink}\textbf{Model:} a positive atom \code{(?x C)} binds \code{?x} only where the KB \emph{entails} it (open world, DL reasoning); \code{neg} is \emph{negation as failure} over \emph{known} objects (closed world). \textbf{No unique-name assumption.}}
+\vspace{2pt}
+
+\begin{multicols}{3}
+
+\sect{Server \& protocol}
+\code{LD\_LIBRARY\_PATH=. ./RacerPro} $\Rightarrow$ TCP \textbf{8088}.\\
+Send \code{"cmd\textbackslash n"}; read CR-terminated frame:\\
+\code{:answer <id> "res" "out"}\ /\ \code{:ok}\ /\ \code{:error}
+
+\sect{KB setup}
+\begin{lstlisting}[language=nrql]
+(full-reset)
+(in-tbox NAME)              ; current TBox
+(in-abox NAME [TBOX])       ; current ABox
+(in-data-box NAME)          ; substrate
+(in-mirror-data-box NAME)   ; auto-mirror
+\end{lstlisting}
+
+\sect{TBox}
+\begin{lstlisting}[language=nrql]
+(implies     Dog Animal)        ; Dog<=Animal
+(equivalent  Mother
+   (and Woman (some has-child Human)))
+(disjoint    Man Woman)
+(define-primitive-role has-child
+   :inverse has-parent :transitive nil
+   :domain Human :range Human)
+(inverse     withdrawal deposit)
+(implies-role deposit transaction)
+(define-concrete-domain-attribute
+   age :type integer)
+\end{lstlisting}
+
+\sect{Concept expressions}
+\code{(and..)(or..)(not C)(some R C)(all R C)} \code{(at-least n R [C])(at-most n R [C])} \code{(exactly n R [C])(one-of i..)} \code{(an attr)}=has some value; \code{top bottom}
+
+\sect{ABox}
+\begin{lstlisting}[language=nrql]
+(instance    alice Woman)
+(related     alice junior has-child)
+(constrained alice a-age age)
+(constraints (equal a-age 50)) ; int->equal
+(different-from k1 k2)         ; no UNA!
+\end{lstlisting}
+{\scriptsize CD preds: int \code{(equal a v)}, real \code{(= a v)(> a v)}, string \code{(string= a s)}.}
+
+\sect{Query forms}
+\begin{lstlisting}[language=nrql]
+(retrieve  <head> <body>)
+(retrieve1 <body> <head>)  ; for :reject
+(tbox-retrieve <head> <body>)
+(defquery NAME (vars) <body>)
+\end{lstlisting}
+
+\sect{Variables}
+\code{?x} ABox, \textbf{injective} (distinct $\Rightarrow$ distinct)\\
+\code{\$?x} ABox, non-injective\\
+\code{?*x}\,/\,\code{\$?*x} substrate node\quad \code{*ind} substrate individual
+
+\sect{Body atoms}
+\begin{lstlisting}[language=nrql]
+(?x C)             ; concept (entailed)
+(?x ?y R)          ; role
+(?x ?y (inv R))    ; inverse role
+(?x (has-known-successor R))
+(TOP ?x) (BOTTOM ?x)
+(same-as ?x ?y) | (= ?x ?y)
+\end{lstlisting}
+
+\sect{Body constructors}
+\code{(and B..)(union B..)(neg B)}\\
+\code{(project-to (?x..) B)} hide other vars ($\exists$)\\
+\code{(inv B)\ \ (substitute (NAME args..))}
+
+\sect{Head projection}
+\code{(?x)} bindings;\ \ \code{(?x (told-value (age ?x)))} told value;\ \ \code{(annotation ..)};\ aggregation via head lambdas.
+
+\sect{Killer idioms (live-verified)}
+\begin{lstlisting}[language=nrql]
+;; sh:minCount 1  (= NOT EXISTS)
+(retrieve (?x) (and (?x Person)
+  (neg (project-to (?x) (?x ?y fn)))))
+;; sh:class on a path  (no counterexample)
+(retrieve (?x) (and (?x Parent)
+  (?x ?y has-child) (neg (?y Person))))
+;; sh:maxCount 1  (no UNA: over-reports)
+(retrieve (?x) (and (?x Person)
+  (?x $?a fn) (?x $?b fn)
+  (neg (same-as $?a $?b))))
+;; sh:disjoint  (shared value)
+(retrieve (?x)
+  (and (?x ?v likes) (?x ?v dislikes)))
+\end{lstlisting}
+
+\sect{Data substrate / property graphs}
+\begin{lstlisting}[language=nrql]
+(data-node acc1
+  ((:amount 1000.0)(:currency $)) account)
+(data-edge acc1 acc2
+  ((:amount 9900.0)) deposit) ; edge props!
+(node-label acc1) (edge-label acc1 acc2)
+(retrieve (?*x)
+  (?*x ((:amount (:predicate (> 1e4))))))
+(retrieve (?*x ?*y)
+  (?*x ?*y (:predicate (equalp deposit))))
+(?*x (:predicate (search "Joh"))) ; substr
+\end{lstlisting}
+
+\sect{Rules}
+\begin{lstlisting}[language=nrql]
+(firerule
+  (and (?x ?y has-child) (?y ?z has-child))
+  ((related ?x ?z has-grandchild)))
+; antecedent may use neg; consequent may
+; (instance (new-ind tag ?x) C) -- create.
+\end{lstlisting}
+
+\sect{Reasoning (what a validator can't)}
+\begin{lstlisting}[language=nrql]
+(classify-tbox) (taxonomy)
+(concept-subsumes? C D)  ; D<=C inferred
+(concept-satisfiable? C)
+(realize-abox)
+(individual-instance? i C)
+(individual-types i)
+(concept-instances C)
+(abox-consistent?)
+\end{lstlisting}
+
+\sect{Query reasoning (the exotic part)}
+\begin{lstlisting}[language=nrql]
+(prepare-abox-query (?x) (?x Mother)) ;:q-1
+(query-consistent-p :query-1) ; ever nonempty?
+(query-entails-p :query-1 :query-2) ; subsump
+(query-equivalent-p :query-1 :query-2)
+\end{lstlisting}
+
+\sect{OWL}
+\begin{lstlisting}[language=nrql]
+(owl-read-file "/path/onto.owl")
+(concept-instances #!:DogOwner) ; inferred
+(individual-instance? #!:john #!:DogOwner)
+\end{lstlisting}
+
+\sect{MiniLisp hatch (termination-safe!)}
+\code{(evaluate (+ 1 2))}; \code{retrieve1} head \code{(:lambda(x)..:reject)} = a filter.\\
+{\scriptsize \textbf{Has} arith, \code{format search subseq reduce dotimes}, KB callbacks. \textbf{Lacks} recursion (aborted), \code{loop require excl:*}, \textbf{regex}. Not Turing-complete --- by design, for a decidable reasoner.}
+
+\sect{\color{acc}Gotchas}
+{\scriptsize
+$\bullet$ \textbf{No UNA}: \code{(at-most 1 R)} + 2 named fillers is \emph{consistent} until \code{(different-from..)}.\\
+$\bullet$ \code{(neg (?x ?y R))} $\ne$ \code{(neg (project-to (?x)(?x ?y R)))} --- use the 2nd for "no R-successor".\\
+$\bullet$ \code{neg} = failure over \emph{known} objects, not classical negation, not "triple absent".\\
+$\bullet$ \code{has-known-successor} sees \emph{named} successors; an OWL existential's anonymous witness it won't.}
+
+\end{multicols}
+\end{document}

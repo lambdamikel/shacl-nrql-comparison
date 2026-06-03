@@ -20,14 +20,16 @@ zeroOrMorePath/oneOrMorePath), not by filename. sh:pattern tests are bucketed by
 their actual regex: a literal substring with no flags is C (substrate `search`),
 otherwise N -- RacerPro has no regex engine (User's Guide pp. 63-64, 137).
 
-IMPORTANT TIER CAVEAT: N is the residual relative to the *declarative* nRQL
-fragment. nRQL also has a lambda + :reject escape hatch (arbitrary server-side
-Common Lisp filter predicates, User's Guide pp. 146-148) -- the analogue of
-SHACL-SPARQL / SHACL-JS. That hatch closes the regex pattern tests outright and,
-via hand-coded traversal, even the path tests. So relative to *full* nRQL the
-SHACL-Core expressivity residual collapses; the genuine residual is SHACL's
-recursive conformance semantics and report model, not expressivity. See paper
-section 5.5.
+TIER NOTE: the 7 N tests are robust. nRQL's lambda + :reject escape hatch is
+NOT Turing-complete -- it is RacerPro's "MiniLisp", a deliberately termination-
+safe sandbox (the interpreter aborts recursive calls; no regex engine), verified
+live on RacerPro 2.0 and in source/expressions.lisp. So the hatch does NOT close
+the residual: it cannot evaluate a general regex (the 3 regex sh:pattern tests)
+nor compute transitive closure (the 4 path tests). It is SHACL's own hatches
+(SPARQL, Turing-complete SHACL-JS) that are powerful; nRQL traded that for
+termination safety, the principled choice for a decidable DL query language. The
+whitelist is extensible (one could register a native regex primitive), but that
+is adding a CL primitive, not a property of the shipped language. See paper 5.5.
 """
 import os, re, csv, collections
 

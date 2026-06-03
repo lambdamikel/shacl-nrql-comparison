@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns="http://example.org/pets#"
+         xml:base="http://example.org/pets">
+  <owl:Ontology rdf:about="http://example.org/pets"/>
+  <owl:Class rdf:about="#Animal"/>
+  <owl:Class rdf:about="#Pet"><rdfs:subClassOf rdf:resource="#Animal"/></owl:Class>
+  <owl:Class rdf:about="#Dog"><rdfs:subClassOf rdf:resource="#Pet"/></owl:Class>
+  <owl:Class rdf:about="#Cat"><rdfs:subClassOf rdf:resource="#Pet"/></owl:Class>
+  <owl:Class rdf:about="#Person"/>
+  <owl:ObjectProperty rdf:about="#owns"/>
+  <owl:Class rdf:about="#DogOwner">
+    <owl:equivalentClass>
+      <owl:Class><owl:intersectionOf rdf:parseType="Collection">
+        <owl:Class rdf:about="#Person"/>
+        <owl:Restriction>
+          <owl:onProperty rdf:resource="#owns"/>
+          <owl:someValuesFrom rdf:resource="#Dog"/>
+        </owl:Restriction>
+      </owl:intersectionOf></owl:Class>
+    </owl:equivalentClass>
+  </owl:Class>
+  <owl:Class rdf:about="#PetOwner">
+    <owl:equivalentClass>
+      <owl:Class><owl:intersectionOf rdf:parseType="Collection">
+        <owl:Class rdf:about="#Person"/>
+        <owl:Restriction>
+          <owl:onProperty rdf:resource="#owns"/>
+          <owl:someValuesFrom rdf:resource="#Pet"/>
+        </owl:Restriction>
+      </owl:intersectionOf></owl:Class>
+    </owl:equivalentClass>
+  </owl:Class>
+  <Person rdf:about="#john"><owns rdf:resource="#fido"/></Person>
+  <Dog rdf:about="#fido"/>
+</rdf:RDF>

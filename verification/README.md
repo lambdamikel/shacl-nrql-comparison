@@ -97,6 +97,26 @@ undecidable research problems, yet RacerPro shipped `query-consistent-p` /
 `query-entails-p` as routine (deliberately incomplete, hence terminating)
 services in 2005 — nRQL could reason about its *own queries*.
 
+## OWL classification capstone — `owl_classification.py` + `pets.owl`
+
+The full OWL pipeline (parse → classify TBox → realize ABox) on a real OWL file.
+`pets.owl` defines `DogOwner ≡ Person ⊓ ∃owns.Dog`, `PetOwner` likewise with `Pet`,
+and `Dog, Cat ⊑ Pet`. `john` is asserted **only** as a `Person` who `owns fido`
+(a `Dog`). RacerPro then infers, with nothing else asserted:
+
+```lisp
+(owl-read-file ".../pets.owl")
+(concept-subsumes? #!:PetOwner #!:DogOwner)  => t     ; DogOwner ⊑ PetOwner (from Dog ⊑ Pet)
+(concept-subsumes? #!:DogOwner #!:PetOwner)  => nil
+(concept-instances #!:DogOwner)              => (john) ; classified by inference
+(concept-instances #!:PetOwner)              => (john)
+```
+
+The `(taxonomy)` call returns the classified hierarchy
+(`… DogOwner ⊑ PetOwner ⊑ Person …`). SHACL has none of this — no TBox, no
+classification, no inferred membership; you would validate a fixed, possibly
+pre-materialized graph.
+
 ## MiniLisp: the lambda/`:reject` hatch is termination-safe (corrects §5.5)
 
 Probing the `(evaluate …)` / lambda facility shows it is **MiniLisp** — a

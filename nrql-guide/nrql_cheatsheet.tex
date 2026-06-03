@@ -40,7 +40,7 @@
   breaklines=true, breakindent=10pt, aboveskip=2pt, belowskip=1pt, xleftmargin=1pt
 }
 \newcommand{\sect}[1]{\vspace{2pt}{\color{hdr}\footnotesize\bfseries #1}\par\vspace{-3pt}{\color{hdr!40}\rule{\linewidth}{0.6pt}}\par\vspace{1pt}}
-\newcommand{\code}[1]{{\ttfamily\small #1}}
+\newcommand{\code}[1]{{\ttfamily #1}}   % size-neutral: matches surrounding text
 \pagestyle{empty}
 
 \begin{document}
@@ -52,6 +52,7 @@
 \vspace{2pt}
 
 \begin{multicols}{3}
+\scriptsize   % uniform body size — matches the code blocks; headers stay \footnotesize
 
 \sect{Server \& protocol}
 \code{LD\_LIBRARY\_PATH=. ./RacerPro} $\Rightarrow$ TCP \textbf{8088}.\\
@@ -83,7 +84,13 @@ Send \code{"cmd\textbackslash n"}; read CR-terminated frame:\\
 \end{lstlisting}
 
 \sect{Concept expressions}
-\code{(and..)(or..)(not C)(some R C)(all R C)} \code{(at-least n R [C])(at-most n R [C])} \code{(exactly n R [C])(one-of i..)} \code{(an attr)}=has some value; \code{top bottom}
+\begin{lstlisting}[language=nrql]
+(and ..) (or ..) (not C) (some R C) (all R C)
+(at-least n R [C]) (at-most n R [C])
+(exactly n R [C]) (one-of i ..)
+(an attr)   ; "has some concrete value"
+top  bottom
+\end{lstlisting}
 
 \sect{ABox}
 \begin{lstlisting}[language=nrql]
@@ -103,10 +110,14 @@ Send \code{"cmd\textbackslash n"}; read CR-terminated frame:\\
 (defquery NAME (vars) <body>)
 \end{lstlisting}
 
+\columnbreak
 \sect{Variables}
-\code{?x} ABox, \textbf{injective} (distinct $\Rightarrow$ distinct)\\
-\code{\$?x} ABox, non-injective\\
-\code{?*x}\,/\,\code{\$?*x} substrate node\quad \code{*ind} substrate individual
+\begin{lstlisting}[language=nrql]
+?x        ; ABox var, INJECTIVE
+$?x       ; ABox var, non-injective
+?*x  $?*x ; substrate node (inj / non-inj)
+*ind      ; a named substrate individual
+\end{lstlisting}
 
 \sect{Body atoms}
 \begin{lstlisting}[language=nrql]
@@ -119,12 +130,20 @@ Send \code{"cmd\textbackslash n"}; read CR-terminated frame:\\
 \end{lstlisting}
 
 \sect{Body constructors}
-\code{(and B..)(union B..)(neg B)}\\
-\code{(project-to (?x..) B)} hide other vars ($\exists$)\\
-\code{(inv B)\ \ (substitute (NAME args..))}
+\begin{lstlisting}[language=nrql]
+(and B..) (union B..) (neg B) (inv B)
+(project-to (?x..) B)  ; hide non-head vars
+;; (project-to (?x) (?x ?y r))  -> x WITH an r
+;; (neg (project-to ..))        -> x WITHOUT it
+(substitute (NAME args..))
+\end{lstlisting}
 
 \sect{Head projection}
-\code{(?x)} bindings;\ \ \code{(?x (told-value (age ?x)))} told value;\ \ \code{(annotation ..)};\ aggregation via head lambdas.
+\begin{lstlisting}[language=nrql]
+(?x)                       ; just the bindings
+(?x (told-value (age ?x))) ; a told value
+;; aggregation via head lambdas (MiniLisp)
+\end{lstlisting}
 
 \sect{Killer idioms (live-verified)}
 \begin{lstlisting}[language=nrql]
@@ -194,8 +213,12 @@ Send \code{"cmd\textbackslash n"}; read CR-terminated frame:\\
 \end{lstlisting}
 
 \sect{MiniLisp hatch (termination-safe!)}
-\code{(evaluate (+ 1 2))}; \code{retrieve1} head \code{(:lambda(x)..:reject)} = a filter.\\
-{\scriptsize \textbf{Has} arith, \code{format search subseq reduce dotimes}, KB callbacks. \textbf{Lacks} recursion (aborted), \code{loop require excl:*}, \textbf{regex}. Not Turing-complete --- by design, for a decidable reasoner.}
+\begin{lstlisting}[language=nrql]
+(evaluate (+ 1 2))    ; restricted evaluator
+;; retrieve1 head with a
+;;   (:lambda (x) .. :reject) = a filter
+\end{lstlisting}
+{\scriptsize \textbf{Has} arith, \code{format}, \code{search}, \code{subseq}, \code{reduce}, \code{dotimes}, KB callbacks. \textbf{Lacks} recursion (aborted to ensure termination), \code{loop}, \code{require}, regex. Not Turing-complete --- by design, for a decidable reasoner.}
 
 \sect{\color{acc}Gotchas}
 {\scriptsize

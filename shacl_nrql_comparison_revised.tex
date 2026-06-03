@@ -334,6 +334,40 @@ The comparison is not one-directional. For \owl{}-aware constraints \nrql{} was 
   \item \textbf{Non-monotonic update rules.} \nrql{} rules have query-body antecedents and generalized \abox{} consequents, can create individuals, and are non-monotonic via \naf{} \cite[pp.~125--127]{racerug}; the reference manual confirms \texttt{firerule} as the rule analogue of \texttt{retrieve} \cite[pp.~160--161]{racerrm}. \shacl{} Core has no update semantics; \shacl{} Advanced Features adds rules later \cite{shaclaf}.
 \end{itemize}
 
+\section{What \shacl{} still cannot do, twenty years on}\label{sec:cantdo}
+The comparison so far asked what \shacl{} \emph{added}. The converse is just as telling, and sharper than the prose of \S\ref{sec:stronger} suggests: a substantial part of the \nrql{}/\racer{} repertoire has no \shacl{} counterpart even today, because \shacl{} is by design a validator over a fixed graph, not a reasoner. To make the point concrete rather than rhetorical, every row of Table~\ref{tab:cantdo} was \emph{executed live} on a \racer{}~2.0 server; the transcripts are in the accompanying repository (\texttt{verification/reasoning\_demos.py}).
+
+\begin{longtable}{p{0.235\linewidth}p{0.40\linewidth}p{0.27\linewidth}}
+\caption{Reasoning services with no \shacl{} Core counterpart, each run live on \racer{}~2.0.}\label{tab:cantdo}\\
+\toprule
+\textbf{Service} & \textbf{\nrql{} / \racer{} (executed live)} & \textbf{\shacl{}} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Service} & \textbf{\nrql{} / \racer{} (executed live)} & \textbf{\shacl{}} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Membership by \emph{inference} & \texttt{betty} asserted only as a \texttt{woman} with a child; \texttt{(individual-instance? betty mother)} $\to$ \texttt{t} for \texttt{mother}$\equiv$\texttt{woman}$\sqcap\exists$\texttt{has-child.human}. & Validates the asserted/materialized graph; cannot infer types from a definition. \\
+\addlinespace
+Logical (un)satisfiability & \texttt{robin} a \texttt{man} and a \texttt{woman} (disjoint) $\Rightarrow$ \texttt{(abox-consistent?)} $\to$ \texttt{nil}. & No notion of contradiction; a graph merely conforms or not. \\
+\addlinespace
+Inferred subsumption & \texttt{dog}$\sqsubseteq$\texttt{animal} $\Rightarrow$ \texttt{(concept-subsumes? animal-owner dog-owner)} $\to$ \texttt{t}, never asserted. & No \tbox{}, no subsumption. \\
+\addlinespace
+Role-axiom reasoning & \texttt{ancestor} transitive, only \texttt{c}$\to$\texttt{d} on the chain asserted; query for \texttt{d}'s ancestors $\to$ \texttt{a, b, c}. & Paths are syntactic over the asserted graph; no transitivity/inverse/sub-role axioms. \\
+\addlinespace
+Cardinality without UNA & \texttt{at-most 1 has-child} with two \emph{named} children: consistent, until \texttt{(different-from k1 k2)} flips it to \texttt{nil}. & Counts distinct \rdf{} terms; no equality reasoning. \\
+\addlinespace
+Non-monotonic rules & \texttt{firerule} with a \naf{} antecedent derives new assertions (e.g.\ \texttt{has-grandchild}). & Core: none; Advanced Features adds (monotonic) rules. \\
+\addlinespace
+\textbf{Query consistency} & \texttt{(query-consistent-p Q)} $\to$ \texttt{nil} for an unsatisfiable query body---guaranteed empty on \emph{every} \abox{}. & Shape satisfiability is undecidable in general \cite{satcont}; no built-in service. \\
+\addlinespace
+\textbf{Query subsumption} & \texttt{(query-entails-p Q1 Q2)} $\to$ \texttt{t}: every answer of \texttt{Q1} is an answer of \texttt{Q2} in every model. & Shape containment is likewise a hard research problem \cite{satcont}; no built-in service. \\
+\end{longtable}
+
+The last two rows are the most striking. \shacl{} \emph{satisfiability} and \emph{containment}---can a shape ever be satisfied? does one shape subsume another?---are the subject of recent research and are \emph{undecidable} in the general recursive case \cite{satcont}. \racer{} shipped \texttt{query-consistent-p} and \texttt{query-entails-p} as routine (if deliberately \emph{incomplete}, hence terminating) nRQL services two decades earlier: nRQL could reason about its \emph{own queries}, not just answer them. The honest framing is not that \shacl{} is deficient---it is a validation language, meant to be paired with a separate reasoner or materializer---but that the integrated package \emph{reasoning $+$ closed-world query $+$ rules $+$ query metareasoning}, in one decidable system, is something \shacl{} does not provide and was never meant to.
+
 \section{A scoped headline, with no fabricated percentage}\label{sec:headline}
 
 The earlier draft summarized the result as ``$\approx 80\%$.'' We withdraw the number. It was disclaimed repeatedly in that draft, which is itself a sign that it carried rhetorical weight it could not support, and in an archival or priority context it is the first detail a skeptical reader would attack. The defensible statement is qualitative:

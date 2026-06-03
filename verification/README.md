@@ -52,6 +52,27 @@ properties and traverse the `deposit`/`withdrawal` inverse — reproduced exactl
 (retrieve (?*x) (and (?*x ((:number 10039))) (neg (same-as ?*x *acc1)))) => (((?*x acc3)))
 ```
 
+## Reasoning demos — `reasoning_demos.py` (what SHACL can't do, §9)
+
+The services that make nRQL + RacerPro *more than a graph validator*, each run
+live (verbatim results from RacerPro 2.0):
+
+| Service | nRQL / Racer | Result |
+| --- | --- | --- |
+| Membership by inference | `betty` asserted only as a `woman` with a child → `(individual-instance? betty mother)` | `t` |
+| Inconsistency | `robin` a `man` *and* a `woman` (disjoint) → `(abox-consistent?)` | `nil` |
+| Inferred subsumption | `dog ⊑ animal` → `(concept-subsumes? animal-owner dog-owner)` | `t` |
+| Role-axiom reasoning | `ancestor` transitive, only `c→d` asserted → ancestors of `d` | `a, b, c` |
+| Cardinality w/o UNA | `at-most 1 has-child` + two *named* children | `t`, then `nil` after `(different-from k1 k2)` |
+| Non-monotonic rule | `firerule` derives `has-grandchild` | `(a c)` |
+| **Query consistency** | `(query-consistent-p Q)` for an unsatisfiable query body | `nil` |
+| **Query subsumption** | `(query-entails-p :query-1 :query-2)` (`mother` query ⊑ `woman` query) | `t` |
+
+The last two are the striking ones: SHACL *satisfiability* and *containment* are
+undecidable research problems, yet RacerPro shipped `query-consistent-p` /
+`query-entails-p` as routine (deliberately incomplete, hence terminating)
+services in 2005 — nRQL could reason about its *own queries*.
+
 ## MiniLisp: the lambda/`:reject` hatch is termination-safe (corrects §5.5)
 
 Probing the `(evaluate …)` / lambda facility shows it is **MiniLisp** — a

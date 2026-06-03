@@ -11,14 +11,28 @@ takes them one step further and **runs them on a real RacerPro 2.0 reasoner**.
    ```sh
    cd .../acl-mlisp && LD_LIBRARY_PATH="$PWD" ./RacerPro
    ```
-3. Run the scripts:
+3. **One command checks everything** — `run_all.py` runs the key query behind
+   every claim and *asserts* the expected result (exit 0 iff all pass):
    ```sh
-   python3 racer_queries.py     # the two card examples + the property-graph session
-   python3 minilisp_probe.py    # characterizes the lambda/:reject "MiniLisp" hatch
+   python3 run_all.py
+   # PASS  minCount: missing firstName -> carol
+   # ...
+   # 16/16 checks passed
+   ```
+   Or run the individual, fully-commented demos:
+   ```sh
+   python3 racer_queries.py        # card examples 1 & 2 + the property-graph session
+   python3 translation_check.py    # rest of Table 1 + the §6.3 open/closed-world trap
+   python3 reasoning_demos.py      # §9: what SHACL can't do (classification, rules, query reasoning)
+   python3 owl_classification.py   # load + classify a real OWL file (pets.owl)
+   python3 minilisp_probe.py       # characterizes the lambda/:reject "MiniLisp" hatch
    ```
 
 The socket protocol is line-based: send `"<command>\n"`, read one CR-terminated
 frame `:answer <id> "<result>" "<stdout>"`.
+
+> **All 16 assertions in `run_all.py` pass** against the RacerPro 2.0 (2013-06-16)
+> binary — the report's execution-verified claims reproduce end to end.
 
 ## Results (verbatim from RacerPro 2.0, 2013-06-16 build)
 

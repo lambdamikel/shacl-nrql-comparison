@@ -113,11 +113,12 @@ top  bottom
 \columnbreak
 \sect{Variables}
 \begin{lstlisting}[language=nrql]
-?x        ; ABox var, INJECTIVE
-$?x       ; ABox var, non-injective
-?*x  $?*x ; substrate node (inj / non-inj)
+?x        ; ABox var, NON-injective
+$?x       ; ABox var, INJECTIVE  (distinct!)
+?*x  $?*x ; substrate node (non-inj / inj)
 *ind      ; a named substrate individual
 \end{lstlisting}
+{\scriptsize \textbf{NB:} reverse of the UG (RacerPro 2.0 was changed; \code{\$?} is injective). Force distinctness explicitly --- see Gotchas.}
 
 \sect{Body atoms}
 \begin{lstlisting}[language=nrql]
@@ -228,7 +229,8 @@ $?x       ; ABox var, non-injective
 $\bullet$ \textbf{No UNA}: \code{(at-most 1 R)} + 2 named fillers is \emph{consistent} until \code{(different-from..)}.\\
 $\bullet$ \code{(neg (?x ?y R))} $\ne$ \code{(neg (project-to (?x)(?x ?y R)))} --- use the 2nd for "no R-successor".\\
 $\bullet$ \code{neg} = failure over \emph{known} objects, not classical negation, not "triple absent".\\
-$\bullet$ \code{has-known-successor} sees \emph{named} successors; an OWL existential's anonymous witness it won't.}
+$\bullet$ \code{has-known-successor} sees \emph{named} successors; an OWL existential's anonymous witness it won't.\\
+$\bullet$ \textbf{Var inequality}: \code{(neg (same-as ?x ?y))} or \code{(neg (= ?x ?y))}. No \code{<>} for individuals; \code{different-from} is ABox-only. UNA toggling doesn't change query var-distinctness.}
 
 \end{multicols}
 \end{document}

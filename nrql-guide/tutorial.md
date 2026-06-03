@@ -113,9 +113,16 @@ years before SPARQL 1.1 standardized `FILTER NOT EXISTS`.
 (((?x alice)))
 ```
 
-Beware: OWL has **no unique-name assumption**, so `f1` and `f2` are not assumed
-distinct. The query flags `alice` because `f1 = f2` is *not entailed* — which may
-over-report. The reasoning side shows the same effect crisply:
+Two notes on the variables. To force two values distinct, use
+`(neg (same-as $?y1 $?y2))` (or `(neg (= …))`); there is no `<>` atom for
+individuals. And a live quirk worth knowing: in RacerPro 2.0, `$?`-variables are
+**injective** (distinct `$?`-vars never co-refer) while plain `?`-variables are
+not — the *reverse* of the User's Guide (the implementation was changed). So
+prefer the explicit `(neg (same-as …))` and don't rely on the injective default.
+
+Beware also: OWL has **no unique-name assumption**, so `f1` and `f2` are not
+assumed distinct. The query flags `alice` because `f1 = f2` is *not entailed* —
+which may over-report. The reasoning side shows the same effect crisply:
 
 ```lisp
 > (full-reset) (in-tbox t) (equivalent single (at-most 1 has-child)) (in-abox t t)

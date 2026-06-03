@@ -80,10 +80,15 @@ Send `"<command>\n"`; read one **CR-terminated** frame:
 
 | Form | Meaning |
 |---|---|
-| `?x` | ABox variable, **injective** (distinct vars ⇒ distinct individuals) |
-| `$?x` | ABox variable, **non-injective** (may collapse; use `(neg (same-as …))` to force distinct) |
-| `?*x` / `$?*x` | substrate-node variable (injective / non-injective) |
+| `?x` | ABox variable, **non-injective** (two `?`-vars may bind the *same* individual) |
+| `$?x` | ABox variable, **injective** (distinct `$?`-vars ⇒ distinct individuals) |
+| `?*x` / `$?*x` | substrate-node variable (non-injective / injective) |
 | `*ind` | substrate **individual** (a named node) |
+
+> ⚠️ **Heads up:** this is the **reverse** of the *User's Guide* (which says `?`
+> injective, `$?` non-injective). The shipping RacerPro 2.0 was changed: `$?`/`$?*`
+> are the injective ones (verified live). To be safe, force distinctness
+> *explicitly* — see Gotchas.
 
 **Body atoms**
 
@@ -93,7 +98,8 @@ Send `"<command>\n"`; read one **CR-terminated** frame:
 (?x ?y (inv R))              ; inverse role
 (?x (has-known-successor R)) ; has a KNOWN R-successor (sugar for a projected role atom)
 (TOP ?x) / (BOTTOM ?x)       ; every / no individual
-(same-as ?x ?y) | (= ?x ?y)  ; (in)equality; (neg (same-as ?x ?y)) ⇒ distinct
+(same-as ?x ?y)|(= ?x ?y)|(equal ?x ?y) ; equality (3 synonyms)
+;; inequality: (neg (same-as ?x ?y)) / (neg (= ?x ?y)) -- NO <> atom for individuals
 ```
 
 **Body constructors**
@@ -236,3 +242,9 @@ Extensible per deployment via `add-server-hook-function`. (UG §4.1.8, pp. 146�
   "triple absent" — fix your reasoning mode / materialization before trusting it.
 - **`has-known-successor`** asks for a *named* successor; an OWL existential gives
   an *entailed* (possibly anonymous) one that `neg`/`has-known-successor` won't see.
+- **Variable (in)equality** — force two vars distinct with `(neg (same-as ?x ?y))`
+  or `(neg (= ?x ?y))`. There is **no `<>`** atom for individuals, and
+  `(different-from i j)` is an *ABox assertion*, not a query atom. The `?`/`$?`
+  injective default is the **reverse of the manual** in RacerPro 2.0 (`$?` is the
+  injective one), so don't rely on it — be explicit. (UNA toggling does *not*
+  change variable-distinctness in queries.)

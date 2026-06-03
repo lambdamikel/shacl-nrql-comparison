@@ -5,3 +5,5 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+shacl_vs_nrql_card.pdf
+*.listing

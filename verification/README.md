@@ -52,6 +52,30 @@ properties and traverse the `deposit`/`withdrawal` inverse — reproduced exactl
 (retrieve (?*x) (and (?*x ((:number 10039))) (neg (same-as ?*x *acc1)))) => (((?*x acc3)))
 ```
 
+## Translation-table idioms + the §6.3 trap — `translation_check.py`
+
+The rest of Table 1, plus the open-world/closed-world trap, run live:
+
+| SHACL | nRQL violation query | Result |
+| --- | --- | --- |
+| `sh:maxCount 1` | two `firstName` fillers not known-equal | `alice` (over-reports without UNA) |
+| `sh:qualifiedMinCount 1` `[sh:class Child]` | `(neg (project-to (?x) (and (?x ?y has-child) (?y Child))))` | `p2` |
+| `sh:disjoint` | `(and (?x ?v likes) (?x ?v dislikes))` (shared value) | `x` |
+| `sh:pattern "Joh"` (substring) | `(?*x (:predicate (search "Joh")))` on mirrored told values | `"Johann"` |
+
+**The §6.3 crux — open world vs closed world.** With `parent ⊑ ∃has-child.⊤`,
+`alice` is a parent with **no named child**, `bob` a parent with a told child:
+
+```lisp
+(individual-instance? alice (some has-child top))  => t     ; alice IS entailed to have a child
+(retrieve (?x) (?x (has-known-successor has-child))) => bob  ; but has no KNOWN child
+(retrieve (?x) (and (?x parent) (neg (?x (has-known-successor has-child))))) => alice
+```
+
+The same individual **satisfies the OWL existential and fails the closed-world
+`minCount` check** — exactly the local-closed-world-over-open-world idiom the whole
+comparison is about.
+
 ## Reasoning demos — `reasoning_demos.py` (what SHACL can't do, §9)
 
 The services that make nRQL + RacerPro *more than a graph validator*, each run

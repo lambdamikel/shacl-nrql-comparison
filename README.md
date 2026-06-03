@@ -166,7 +166,10 @@ Each row pairs an **actual W3C test case** with a faithful nRQL *violation* quer
 constraint is "a query whose answers are the violations"). Queries assume a fixed
 entailment regime and, where noted, the substrate mirror. **All nRQL syntax below
 is verified against the RacerPro _User's Guide 2.0_ — §4.1.9 "Formal Syntax of
-nRQL" (printed pp. 150–153) and the mirror-substrate section (pp. 137–143).**
+nRQL" (printed pp. 150–153) and the mirror-substrate section (pp. 137–143) — and
+the principal idioms were [executed live on RacerPro 2.0](verification/), returning
+exactly the expected violations (including the entailment-aware and
+open-world/closed-world cases).**
 Grammar conventions: `?x` is an _injective_ ABox variable, `$?x` non-injective,
 `?*x` a substrate variable; `(:predicate …)` and `:satisfies` are substrate
 predicate forms; `:owl-datatype-value` / `:owl-datatype-role` are real mirror

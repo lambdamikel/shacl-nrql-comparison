@@ -10,6 +10,13 @@ substrate representation layer, and hybrid nRQL queries.
 [coding results (CSV)](shacl_test_suite_coding.csv) ·
 [live RacerPro 2.0 verification](verification/)
 
+> 🆕 **New to nRQL?** Start with the **[nRQL tutorial](nrql-guide/tutorial.md)** —
+> a hands-on, run-it-yourself walkthrough from "hello server" through closed-world
+> validation, classification, property graphs, rules, and query reasoning. And
+> keep the **[cheat sheet](nrql-guide/cheatsheet.md)** next to you (there's a
+> printable [one-page card](nrql-guide/nrql_cheatsheet.pdf), too!). Every example
+> was checked against a live reasoner.
+
 ## Summary
 
 This report asks a deliberately narrow, conceptual question: what did SHACL make

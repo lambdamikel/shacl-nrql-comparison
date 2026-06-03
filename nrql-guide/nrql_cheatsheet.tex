@@ -132,10 +132,13 @@ $?x       ; ABox var, non-injective
 \sect{Body constructors}
 \begin{lstlisting}[language=nrql]
 (and B..) (union B..) (neg B) (inv B)
-(project-to (?x..) B)  ; hide non-head vars
-;; (project-to (?x) (?x ?y r))  -> x WITH an r
-;; (neg (project-to ..))        -> x WITHOUT it
+(project-to (?x..) B)  ; B may be a conjunction
 (substitute (NAME args..))
+;; "c's with no r-successor of type e"
+;;  (complex projected body, negated):
+(retrieve (?x) (and (?x c)
+  (neg (project-to (?x)
+         (and (?x ?y r) (?y e))))))
 \end{lstlisting}
 
 \sect{Head projection}

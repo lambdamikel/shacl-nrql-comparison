@@ -4,6 +4,11 @@ A semantic comparison of [SHACL](https://www.w3.org/TR/shacl/) validation with
 RacerPro's **nRQL** query language, the OWL/Data Mirroring Substrate, the
 substrate representation layer, and hybrid nRQL queries.
 
+📄 **Read it:** [Revised report (PDF)](shacl_nrql_comparison_revised.pdf) ·
+[LaTeX source](shacl_nrql_comparison_revised.tex) ·
+[SHACL test-suite coding](code_shacl_test_suite.py) ·
+[coding results (CSV)](shacl_test_suite_coding.csv)
+
 ## Summary
 
 This report asks a deliberately narrow, conceptual question: what did SHACL make
@@ -57,13 +62,14 @@ use the same discipline — separating *prior art* and *conceptual convergence* 
 
 | File | Description |
 | --- | --- |
-| `shacl_nrql_comparison_revised.pdf` | **Revised edition** of the comparison (PDF) — recommended. |
-| `shacl_nrql_comparison_revised.tex` | LaTeX source for the revised edition. |
-| `code_shacl_test_suite.py` | Reproducible coding of the W3C SHACL test suite against the paper's Table 1. |
-| `shacl_test_suite_coding.csv` | Per-file audit trail for the coding (95 SHACL Core tests). |
-| `pgraph-example.jpeg` | A property graph (bank accounts + a `deposit` edge with `:amount`/`:currency`) built and queried in RacerPro 2.0 — evidence for investigation 2. |
-| `nrql_shacl_report_ai_declaration.pdf` | Original report (PDF). |
-| `nrql_shacl_report_ai_declaration.tex` | LaTeX source for the original report. |
+| [`shacl_nrql_comparison_revised.pdf`](shacl_nrql_comparison_revised.pdf) | **Revised edition** of the comparison (PDF) — recommended. |
+| [`shacl_nrql_comparison_revised.tex`](shacl_nrql_comparison_revised.tex) | LaTeX source for the revised edition. |
+| [`code_shacl_test_suite.py`](code_shacl_test_suite.py) | Reproducible coding of the W3C SHACL test suite against the paper's Table 1. |
+| [`shacl_test_suite_coding.csv`](shacl_test_suite_coding.csv) | Per-file audit trail for the coding (95 SHACL Core tests). |
+| [`pgraph-example.jpeg`](pgraph-example.jpeg) | A property graph (bank accounts + a `deposit` edge with `:amount`/`:currency`) built and queried in RacerPro 2.0 — evidence for investigation 2. |
+| [`shacl_vs_nrql_card.png`](shacl_vs_nrql_card.png) | Side-by-side SHACL-vs-nRQL summary card (social / teaching graphic; [LaTeX source](shacl_vs_nrql_card.tex)). |
+| [`nrql_shacl_report_ai_declaration.pdf`](nrql_shacl_report_ai_declaration.pdf) | Original report (PDF). |
+| [`nrql_shacl_report_ai_declaration.tex`](nrql_shacl_report_ai_declaration.tex) | LaTeX source for the original report. |
 
 ## Revised edition
 

@@ -69,17 +69,24 @@ Add an axiom saying every parent has *some* child, then ask two different questi
 > (individual-instance? alice (some has-child top))   ; is she ENTAILED to have a child?
 t                                                     ; yes — the open-world axiom
 
-> (retrieve (?x) (?x (has-known-successor has-child))); who has a KNOWN child?
+> (retrieve (?x) (?x (some has-child top)))           ; OWA: who HAS some child? (entailed)
+(((?x alice)) ((?x bob)))                             ; both — alice via the axiom
+
+> (retrieve (?x) (?x (has-known-successor has-child))); CWA: who has a KNOWN child?
 (((?x bob)))                                          ; only bob
 
 > (retrieve (?x) (and (?x parent) (neg (?x (has-known-successor has-child)))))
 (((?x alice)))                                        ; alice fails the closed-world check
 ```
 
+A concept atom `(?x C)` accepts **any** concept expression, not just an atomic
+name — so `(?x (some has-child top))` is the open-world, entailment-aware query
+"who has some (possibly anonymous) child", and it returns `alice` too. Contrast
+`(?x (has-known-successor has-child))`, which asks for a *named* successor. So
 `alice` **satisfies the OWL existential yet fails the closed-world "has a child"
 check.** This is the heart of nRQL: `neg` is *negation as failure over known
-objects*, not classical negation. `has-known-successor` asks for a *named*
-successor — the anonymous witness an existential promises does not count.
+objects*, not classical negation; the anonymous witness an existential promises
+does not count for `has-known-successor`.
 
 > **Pitfall.** Write `(neg (project-to (?x) (?x ?y has-child)))`, **not**
 > `(neg (?x ?y has-child))`. The first means "no `has-child` successor exists";

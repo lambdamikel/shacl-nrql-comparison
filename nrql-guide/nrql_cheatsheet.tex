@@ -122,7 +122,8 @@ $?x       ; ABox var, INJECTIVE  (distinct!)
 
 \sect{Body atoms}
 \begin{lstlisting}[language=nrql]
-(?x C)             ; concept (entailed)
+(?x C)             ; C=ANY concept expr (entailed)
+(?x (some r top))  ;  OWA: has some r-filler
 (?x ?y R)          ; role
 (?x ?y (inv R))    ; inverse role
 (?x (has-known-successor R))

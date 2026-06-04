@@ -93,10 +93,11 @@ Send `"<command>\n"`; read one **CR-terminated** frame:
 **Body atoms**
 
 ```lisp
-(?x C)                       ; concept atom (entailment-aware)
+(?x C)                       ; concept atom; C = ANY concept expr (entailment-aware)
+(?x (some r top))            ;   OWA: "has some (poss. anonymous) r-filler"
 (?x ?y R)                    ; role atom
 (?x ?y (inv R))              ; inverse role
-(?x (has-known-successor R)) ; has a KNOWN R-successor (sugar for a projected role atom)
+(?x (has-known-successor R)) ; vs CWA: has a KNOWN, NAMED R-successor
 (TOP ?x) / (BOTTOM ?x)       ; every / no individual
 (same-as ?x ?y)|(= ?x ?y)|(equal ?x ?y) ; equality (3 synonyms)
 ;; inequality: (neg (same-as ?x ?y)) / (neg (= ?x ?y)) -- NO <> atom for individuals

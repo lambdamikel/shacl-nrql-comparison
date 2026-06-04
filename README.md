@@ -76,6 +76,7 @@ use the same discipline — separating *prior art* and *conceptual convergence* 
 | [`shacl_test_suite_coding.csv`](shacl_test_suite_coding.csv) | Per-file audit trail for the coding (95 SHACL Core tests). |
 | [`verification/`](verification/) | Live RacerPro 2.0 execution check: scripts + verbatim results for the two card examples, the property-graph session, and the MiniLisp-hatch characterization. |
 | [`nrql-guide/`](nrql-guide/) | A practical **nRQL tutorial + cheat sheet** (written while building this repo; all examples run live on RacerPro 2.0). |
+| [`manuals/`](manuals/) | The RacerPro manuals referenced throughout — [User's Guide 2.0](manuals/RacerPro-Users-Guide-2.0.pdf) and [Reference Manual 1.9](manuals/RacerPro-Reference-Manual-1.9.pdf). |
 | [`pgraph-example.jpeg`](pgraph-example.jpeg) | A property graph (bank accounts + a `deposit` edge with `:amount`/`:currency`) built and queried in RacerPro 2.0 — evidence for investigation 2. |
 | [`shacl_vs_nrql_card.png`](shacl_vs_nrql_card.png) | Side-by-side SHACL-vs-nRQL summary card (social / teaching graphic; [LaTeX source](shacl_vs_nrql_card.tex)). |
 | [`nrql_shacl_report_ai_declaration.pdf`](nrql_shacl_report_ai_declaration.pdf) | Original report (PDF). |

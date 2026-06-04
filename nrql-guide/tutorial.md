@@ -257,5 +257,6 @@ to a *decidable* reasoner: a query filter can never make the server diverge.
 - The [cheat sheet](cheatsheet.md) for the full operator/atom inventory.
 - The runnable demos in [`../verification/`](../verification/) — `run_all.py` checks
   all of the above in one go.
-- The *RacerPro User's Guide 2.0*, §4.1, for the formal grammar (pp. 150–153) and
-  the complete reasoning/substrate API.
+- The [*RacerPro User's Guide 2.0*](../manuals/RacerPro-Users-Guide-2.0.pdf), §4.1,
+  for the formal grammar (pp. 150–153) and the complete reasoning/substrate API
+  (and the [*Reference Manual 1.9*](../manuals/RacerPro-Reference-Manual-1.9.pdf)).

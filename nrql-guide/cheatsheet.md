@@ -1,9 +1,9 @@
 # nRQL Cheat Sheet
 
 A compact reference for **nRQL**, the new RacerPro Query Language. Grounded in the
-*RacerPro User's Guide 2.0* (§4.1) and **verified live on RacerPro 2.0** (see
-[`../verification/`](../verification/)). Page numbers are the printed pages of the
-User's Guide.
+[*RacerPro User's Guide 2.0*](../manuals/RacerPro-Users-Guide-2.0.pdf) (§4.1) and
+**verified live on RacerPro 2.0** (see [`../verification/`](../verification/)).
+Page numbers are the printed pages of the User's Guide.
 
 > **Mental model.** A positive atom `(?x C)` binds `?x` only to objects for which
 > the KB *entails* the atom (open world, DL reasoning). `neg` is **negation as

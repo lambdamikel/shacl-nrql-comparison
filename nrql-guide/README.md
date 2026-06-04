@@ -13,7 +13,7 @@ while building (and live-testing) the SHACL-vs-nRQL comparison in this repo.
   Also typeset as a printable card: **[nrql_cheatsheet.pdf](nrql_cheatsheet.pdf)**
   (one landscape page, 3 columns; source `nrql_cheatsheet.tex`).
 
-Grounded in the *RacerPro User's Guide 2.0* (§4.1) and verified against a running
+Grounded in the [*RacerPro User's Guide 2.0*](../manuals/RacerPro-Users-Guide-2.0.pdf) (§4.1) and verified against a running
 RacerPro 2.0 — the runnable demos are in [`../verification/`](../verification/)
 (`run_all.py` checks them all in one go). RacerPro binaries:
 [lambdamikel/RacerPorter](https://github.com/lambdamikel/RacerPorter).
